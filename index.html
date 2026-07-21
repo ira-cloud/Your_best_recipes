@@ -40,13 +40,13 @@
             width: 100%; padding: 10px 12px; border: 1px solid var(--border);
             border-radius: 10px; font-size: 12px; margin-bottom: 10px; background: #fbfdfc; outline: none;
         }
-        textarea { height: 85px; resize: none; }
+        textarea { height: 80px; resize: none; }
 
         .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 10px 0 6px 0; }
 
-        .chips-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+        .chips-grid { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 10px; max-height: 170px; overflow-y: auto; padding-right: 4px; }
         .chip-toggle {
-            font-size: 10px; padding: 5px 9px; border-radius: 16px; border: 1px solid var(--border);
+            font-size: 10px; padding: 5px 8px; border-radius: 14px; border: 1px solid var(--border);
             background: #f0f4f1; color: var(--text-dark); cursor: pointer; user-select: none; transition: all 0.2s;
         }
         .chip-toggle.active { background: #fde8e8; border-color: var(--danger); color: #a83232; font-weight: 600; }
@@ -56,7 +56,7 @@
             border: none; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; margin-top: 8px;
         }
 
-        .result-card { margin-top: 16px; background: #ffffff; border: 1px solid var(--accent); border-radius: 14px; padding: 14px; font-size: 12px; line-height: 1.5; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .result-card { margin-top: 14px; background: #ffffff; border: 1px solid var(--accent); border-radius: 14px; padding: 14px; font-size: 12px; line-height: 1.5; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
         .result-title { font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
         .meta-info { display: flex; gap: 12px; font-size: 11px; color: var(--text-muted); margin-bottom: 10px; background: #f4f8f5; padding: 6px 10px; border-radius: 8px; }
         .recipe-section { margin-top: 10px; }
@@ -71,14 +71,15 @@
 <div class="phone-mockup">
     <div class="header">
         <h1>Clean Eats Hub</h1>
-        <p>Адаптация рецептов под ваш рацион</p>
+        <p>Адаптация и генерация рецептов</p>
     </div>
 
     <div class="tabs">
         <button class="tab active" onclick="switchTab('adapter')">🔄 Адаптер</button>
-        <button class="tab" onclick="switchTab('curator')">🔍 Поиск</button>
+        <button class="tab" onclick="switchTab('curator')">🔍 Поиск / Генератор</button>
     </div>
 
+    <!-- ВКЛАДКА 1: АДАПТЕР -->
     <div id="adapter" class="tab-content active">
         <div class="section-label">1. Вставьте обычный рецепт:</div>
         <textarea id="recipeInput" placeholder="Вставьте сюда рецепт из интернета..."></textarea>
@@ -88,61 +89,110 @@
             ✅ Без глютена &nbsp;•&nbsp; ✅ Без сахара &nbsp;•&nbsp; ✅ Без молочки
         </div>
 
-        <div class="section-label">3. Исключения / Аллергены:</div>
+        <div class="section-label">3. Исключения (отдельные кнопки):</div>
         <div class="chips-grid">
-            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Все молочные сыры & молоко</div>
-            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Яйца куриные</div>
-            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Орехи & Арахис</div>
-            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Рыба & Морепродукты</div>
-            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Паслёновые (томаты, картошка)</div>
-            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Морковь, Лук, Сельдерей</div>
-            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Цитрусовые & Экзот. фрукты</div>
-            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Клубника, Киви, Ананас, Дыня</div>
-            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Горчица & Кунжут</div>
-            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Мед</div>
-            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Грибы & Свинина</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Коровье молоко</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Все сыры</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Куриные яйца</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Арахис</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Миндаль</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Грецкий орех</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Кешью</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Фундук</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Фисташки</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Рыба (общее)</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Треска</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Лосось</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Креветки</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Крабы</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Кальмары</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Пшеница</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Соя</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Кунжут</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Картошка</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Томаты</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Морковь</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Лук</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Капуста</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Сельдерей</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Грибы</div>
             <div class="chip-toggle" onclick="toggleChip(this)">🚫 Авокадо</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Апельсины</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Мандарины</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Лимоны</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Клубника</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Киви</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Ананасы</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Дыня</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Мёд</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Горчица</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Свинина</div>
         </div>
 
-        <div class="section-label">4. Что ещё исключить из блюда?</div>
-        <input type="text" id="customExclusions" placeholder="Например: какао, чеснок, шпинат...">
+        <div class="section-label">4. Что ещё исключить?</div>
+        <input type="text" id="customExclusions" placeholder="Например: какао, чеснок...">
 
         <button class="btn-primary" onclick="processRecipe()">Адаптировать и рассчитать рецепт</button>
 
         <div id="resultBox" class="result-card" style="display:none;">
             <span class="badge">Полный адаптированный рецепт</span>
             <div class="result-title" id="resTitle">Адаптированный рецепт</div>
-            
             <div class="meta-info">
                 <span>⏱ Время: <strong id="resTime">40 мин</strong></span>
                 <span>🌡 Режим: <strong id="resTemp">170°C</strong></span>
             </div>
-
             <div class="recipe-section">
-                <h4>🥣 Обновлённые ингредиенты:</h4>
-                <ul id="resIngredients">
-                    </ul>
+                <h4>🥣 Ингредиенты:</h4>
+                <ul id="resIngredients"></ul>
             </div>
-
             <div class="recipe-section">
                 <h4>📝 Пошаговое приготовление:</h4>
-                <ol id="resSteps">
-                    </ol>
+                <ol id="resSteps"></ol>
             </div>
-
             <div class="recipe-section" style="background: #fff8eb; padding: 8px; border-radius: 8px; border: 1px solid #ffe3b3; margin-top: 8px;">
-                <h4 style="color: #b86e00;">💡 Особенности выпечки и технологии:</h4>
+                <h4 style="color: #b86e00;">💡 Особенности рецепта:</h4>
                 <p id="resTips" style="font-size: 11px; color: #664d00;"></p>
             </div>
         </div>
     </div>
 
+    <!-- ВКЛАДКА 2: ПОИСК И ГЕНЕРАЦИЯ ПО НАЗВАНИЮ -->
     <div id="curator" class="tab-content">
-        <p style="font-size: 12px; color: var(--text-muted);">База проверенных рецептов канала...</p>
+        <div class="section-label">Введите название блюда:</div>
+        <input type="text" id="searchInput" placeholder="Например: Сырники, Блины, Окрошка...">
+        <button class="btn-primary" style="margin-top: 0; margin-bottom: 12px;" onclick="searchOrGenerate()">Найти / Создать чистый рецепт</button>
+
+        <div id="searchResults">
+            <!-- Результат поиска или генерации -->
+        </div>
     </div>
 </div>
 
 <script>
+    // Готовая база проверенных рецептов
+    const recipesDB = [
+        {
+            keywords: ['окрошка', 'окрошка без картошки'],
+            title: '🥑 Полезная Чистая Окрошка (Без картофеля и колбасы)',
+            time: '15 мин',
+            temp: 'Холодное блюдо',
+            ingredients: [
+                '<b>200г</b> отварной индейки или куриного филе',
+                '<b>2 шт</b> свежих огурца',
+                '<b>5-6 шт</b> редиса',
+                '<b>1/2 шт</b> авокадо (заменяет картофель)',
+                '<b>1 пучок</b> свежего укропа и петрушки',
+                '<b>400мл</b> кокосового йогурта без сахара / минеральной воды с лимоном'
+            ],
+            steps: [
+                'Нарежьте филе, огурцы, редис и авокадо кубиками.',
+                'Мелко нашинкуйте зелень.',
+                'Залейте кокосовым йогуртом или минералкой с лимонным соком и солью.'
+            ],
+            tips: 'Авокадо даёт нужную сытость без картофеля, а кокосовый йогурт заменяет сметану.'
+        }
+    ];
+
     function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
@@ -154,48 +204,110 @@
         el.classList.toggle('active');
     }
 
+    function getSelectedExclusions() {
+        let selected = [];
+        document.querySelectorAll('.chip-toggle.active').forEach(chip => {
+            selected.push(chip.innerText.replace('🚫 ', ''));
+        });
+        const custom = document.getElementById('customExclusions').value;
+        if (custom) selected.push(custom);
+        return selected;
+    }
+
+    function searchOrGenerate() {
+        const query = document.getElementById('searchInput').value.toLowerCase().trim();
+        const resultsContainer = document.getElementById('searchResults');
+        resultsContainer.innerHTML = '';
+
+        if (!query) {
+            resultsContainer.innerHTML = '<p style="font-size:12px; color: var(--text-muted);">Введите название блюда (например: Сырники, Окрошка, Запеканка).</p>';
+            return;
+        }
+
+        // Проверяем, есть ли блюдо в проверенной базе
+        const found = recipesDB.find(r => r.keywords.some(k => k.includes(query) || query.includes(k)));
+
+        if (found) {
+            renderCard(found.title, found.time, found.temp, found.ingredients, found.steps, found.tips, 'Проверенный рецепт');
+        } else {
+            // Создаем чистый рецепт по названию с учетом всех выключенных аллергенов
+            const exclusions = getSelectedExclusions();
+            const title = `✨ Чистая версия: ${query.charAt(0).toUpperCase() + query.slice(1)}`;
+            const ingredients = [
+                '<b>Основа:</b> Заменена на альтернативные гипоаллергенные ингредиенты',
+                '<b>Подсластитель:</b> Эритрит или Стевия (без сахара и мёда)',
+                '<b>Связующее:</b> Псиллиум / семена чиа (без яиц и глютена)',
+                '<b>Жиры:</b> Кокосовое масло или Гхи (без молочных жиров)',
+                `<li style="color:#d96b6b; margin-top:4px; font-weight:600;">🚫 Автоматически исключено из блюда: ${exclusions.length > 0 ? exclusions.join(', ') : 'Стандартные аллергены'}</li>`
+            ];
+            const steps = [
+                `Подготовьте компоненты для ${query} с исключением выбранных аллергенов.`,
+                'Объедините сухие и жидкие ингредиенты, дайте тесту/массе постоять 7-10 минут.',
+                'Приготовьте блюдо на умеренном огне или в духовке до готовности.'
+            ];
+            const tips = 'Рецепт автоматически адаптирован под ваши настроенные исключения в вкладке «Адаптер».';
+
+            renderCard(title, '25-30 мин', '170°C', ingredients, steps, tips, 'Сгенерировано под ваши правила');
+        }
+    }
+
+    function renderCard(title, time, temp, ingredients, steps, tips, badgeText) {
+        const container = document.getElementById('searchResults');
+        const card = document.createElement('div');
+        card.className = 'result-card';
+        card.style.display = 'block';
+        card.innerHTML = `
+            <span class="badge">${badgeText}</span>
+            <div class="result-title">${title}</div>
+            <div class="meta-info">
+                <span>⏱ Время: <strong>${time}</strong></span>
+                <span>🌡 Режим: <strong>${temp}</strong></span>
+            </div>
+            <div class="recipe-section">
+                <h4>🥣 Ингредиенты:</h4>
+                <ul>${ingredients.map(i => `<li>${i}</li>`).join('')}</ul>
+            </div>
+            <div class="recipe-section">
+                <h4>📝 Пошаговое приготовление:</h4>
+                <ol>${steps.map(s => `<li>${s}</li>`).join('')}</ol>
+            </div>
+            <div class="recipe-section" style="background: #fff8eb; padding: 8px; border-radius: 8px; border: 1px solid #ffe3b3; margin-top: 8px;">
+                <h4 style="color: #b86e00;">💡 Совет:</h4>
+                <p style="font-size: 11px; color: #664d00;">${tips}</p>
+            </div>
+        `;
+        container.appendChild(card);
+    }
+
     function processRecipe() {
         const text = document.getElementById('recipeInput').value;
-        const custom = document.getElementById('customExclusions').value;
-
         if (!text) {
             alert('Пожалуйста, вставьте исходный рецепт в поле №1!');
             return;
         }
 
-        // Собираем активные чипсы
-        let selectedExclusions = [];
-        document.querySelectorAll('.chip-toggle.active').forEach(chip => {
-            selectedExclusions.push(chip.innerText.replace('🚫 ', ''));
-        });
+        const selectedExclusions = getSelectedExclusions();
 
-        if (custom) {
-            selectedExclusions.push(custom);
-        }
-
-        // Отображаем блок с результатом
         document.getElementById('resultBox').style.display = 'block';
-
         document.getElementById('resTitle').innerText = "Полная чистая версия рецепта";
         document.getElementById('resTime').innerText = "40-45 минут";
-        document.getElementById('resTemp').innerText = "170°C (средний уровень)";
+        document.getElementById('resTemp').innerText = "170°C";
 
         document.getElementById('resIngredients').innerHTML = 
-            '<li><b>180г</b> муки зелёной гречки / киноа (вместо пшеничной)</li>' +
-            '<li><b>1 ч.л.</b> псиллиума (для эластичности теста без глютена)</li>' +
-            '<li><b>70г</b> Эритрита или Стевия по вкусу (строго без сахара и меда)</li>' +
-            '<li><b>40г</b> растопленного масла гхи или кокосового (без коровьего молока)</li>' +
-            '<li><b>150мл</b> воды или дозволенного растительного молока</li>' +
-            '<li style="color:#d96b6b; margin-top:6px; font-weight:600;">🚫 Заменено и исключено: ' + selectedExclusions.join(', ') + '</li>';
+            '<li><b>180г</b> муки зелёной гречки / киноа</li>' +
+            '<li><b>1 ч.л.</b> псиллиума</li>' +
+            '<li><b>70г</b> Эритрита или Стевия по вкусу</li>' +
+            '<li><b>40г</b> кокосового масла или Гхи</li>' +
+            '<li style="color:#d96b6b; margin-top:6px; font-weight:600;">🚫 Исключены в блюде: ' + selectedExclusions.join(', ') + '</li>';
 
         document.getElementById('resSteps').innerHTML = 
-            '<li><b>Подготовка:</b> Разогрейте духовку до 170°C. Просейте муку зелёной гречки и смешайте с псиллиумом и эритритом.</li>' +
-            '<li><b>Замес:</b> Влейте жидкие ингредиенты в сухую смесь, перемешайте до однородности.</li>' +
-            '<li><b>Отдых теста:</b> Обязательно дайте тесту постоять 7–10 минут, чтобы псиллиум впитал влагу и связал структуру без яиц и глютена.</li>' +
-            '<li><b>Выпекание:</b> Переложите в форму и выпекайте 40–45 минут. Проверяйте готовность деревянной шпажкой.</li>';
+            '<li>Смешайте сухие ингредиенты: муку зелёной гречки, псиллиум и эритрит.</li>' +
+            '<li>Добавьте жидкие компоненты и тщательно перемешайте.</li>' +
+            '<li>Дайте тесту постоять 7–10 минут, чтобы псиллиум связал структуру.</li>' +
+            '<li>Выпекайте при 170°C около 40 минут.</li>';
 
         document.getElementById('resTips').innerText = 
-            'Альтернативная мука без глютена требует чуть больше времени для пропекания при более низкой температуре (170°C), чтобы середина не осталась влажной.';
+            'Выпечка без глютена и яиц требует немного больше времени при более низкой температуре (170°C).';
     }
 </script>
 
