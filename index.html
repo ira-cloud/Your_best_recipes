@@ -36,29 +36,34 @@
         .tab-content { padding: 16px; display: none; }
         .tab-content.active { display: block; }
 
-        textarea {
+        textarea, input[type="text"] {
             width: 100%; padding: 10px 12px; border: 1px solid var(--border);
             border-radius: 10px; font-size: 12px; margin-bottom: 10px; background: #fbfdfc; outline: none;
-            height: 80px; resize: none;
         }
+        textarea { height: 85px; resize: none; }
 
-        .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 8px 0 6px 0; }
+        .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 10px 0 6px 0; }
 
-        .chips-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .chips-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
         .chip-toggle {
-            font-size: 11px; padding: 5px 10px; border-radius: 16px; border: 1px solid var(--border);
+            font-size: 10px; padding: 5px 9px; border-radius: 16px; border: 1px solid var(--border);
             background: #f0f4f1; color: var(--text-dark); cursor: pointer; user-select: none; transition: all 0.2s;
         }
         .chip-toggle.active { background: #fde8e8; border-color: var(--danger); color: #a83232; font-weight: 600; }
 
         button.btn-primary {
             width: 100%; padding: 12px; background: var(--primary); color: white;
-            border: none; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer;
+            border: none; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer; margin-top: 8px;
         }
 
-        .result-box { margin-top: 12px; background: #f4f8f5; border: 1px dashed var(--accent); border-radius: 12px; padding: 12px; font-size: 12px; line-height: 1.5; }
+        .result-card { margin-top: 16px; background: #ffffff; border: 1px solid var(--accent); border-radius: 14px; padding: 14px; font-size: 12px; line-height: 1.5; box-shadow: 0 4px 12px rgba(0,0,0,0.03); }
+        .result-title { font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 8px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+        .meta-info { display: flex; gap: 12px; font-size: 11px; color: var(--text-muted); margin-bottom: 10px; background: #f4f8f5; padding: 6px 10px; border-radius: 8px; }
+        .recipe-section { margin-top: 10px; }
+        .recipe-section h4 { font-size: 12px; color: var(--primary); margin-bottom: 4px; font-weight: 700; }
+        .recipe-section ul, .recipe-section ol { padding-left: 18px; margin-bottom: 8px; }
+        .recipe-section li { margin-bottom: 4px; }
         .badge { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; background: #e1efe6; color: var(--primary); margin-bottom: 6px; }
-        .badge-alert { background: #fde8e8; color: #a83232; }
     </style>
 </head>
 <body>
@@ -66,7 +71,7 @@
 <div class="phone-mockup">
     <div class="header">
         <h1>Clean Eats Hub</h1>
-        <p>Адаптация рецептов без глютена, сахара и молочки</p>
+        <p>Адаптация рецептов под ваш рацион</p>
     </div>
 
     <div class="tabs">
@@ -76,32 +81,64 @@
 
     <div id="adapter" class="tab-content active">
         <div class="section-label">1. Вставьте обычный рецепт:</div>
-        <textarea id="recipeInput" placeholder="Например: 200г пшеничной муки, 100г сахара, 2 яйца..."></textarea>
+        <textarea id="recipeInput" placeholder="Вставьте сюда рецепт из интернета..."></textarea>
 
         <div class="section-label">2. Базовые правила:</div>
-        <div style="font-size: 11px; color: var(--primary); margin-bottom: 8px;">
+        <div style="font-size: 11px; color: var(--primary); margin-bottom: 8px; font-weight: 600;">
             ✅ Без глютена &nbsp;•&nbsp; ✅ Без сахара &nbsp;•&nbsp; ✅ Без молочки
         </div>
 
-        <div class="section-label">3. Исключения / Аллергии:</div>
+        <div class="section-label">3. Исключения / Аллергены:</div>
         <div class="chips-grid">
-            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Орехи</div>
-            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Яйца</div>
-            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Кокос</div>
-            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Паслёновые</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Все молочные сыры & молоко</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Яйца куриные</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Орехи & Арахис</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Рыба & Морепродукты</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Паслёновые (томаты, картошка)</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Морковь, Лук, Сельдерей</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Цитрусовые & Экзот. фрукты</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Клубника, Киви, Ананас, Дыня</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Горчица & Кунжут</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Мед</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Грибы & Свинина</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Авокадо</div>
         </div>
 
-        <button class="btn-primary" onclick="processRecipe()">Адаптировать рецепт</button>
+        <div class="section-label">4. Что ещё исключить из блюда?</div>
+        <input type="text" id="customExclusions" placeholder="Например: какао, чеснок, шпинат...">
 
-        <div id="resultBox" class="result-box" style="display:none;">
-            <span class="badge">Результат</span>
-            <span class="badge badge-alert">Адаптировано под ваши правила</span>
-            <div id="resultText"></div>
+        <button class="btn-primary" onclick="processRecipe()">Адаптировать и рассчитать рецепт</button>
+
+        <div id="resultBox" class="result-card" style="display:none;">
+            <span class="badge">Полный адаптированный рецепт</span>
+            <div class="result-title" id="resTitle">Адаптированный рецепт</div>
+            
+            <div class="meta-info">
+                <span>⏱ Время: <strong id="resTime">40 мин</strong></span>
+                <span>🌡 Режим: <strong id="resTemp">170°C</strong></span>
+            </div>
+
+            <div class="recipe-section">
+                <h4>🥣 Обновлённые ингредиенты:</h4>
+                <ul id="resIngredients">
+                    </ul>
+            </div>
+
+            <div class="recipe-section">
+                <h4>📝 Пошаговое приготовление:</h4>
+                <ol id="resSteps">
+                    </ol>
+            </div>
+
+            <div class="recipe-section" style="background: #fff8eb; padding: 8px; border-radius: 8px; border: 1px solid #ffe3b3; margin-top: 8px;">
+                <h4 style="color: #b86e00;">💡 Особенности выпечки и технологии:</h4>
+                <p id="resTips" style="font-size: 11px; color: #664d00;"></p>
+            </div>
         </div>
     </div>
 
     <div id="curator" class="tab-content">
-        <p style="font-size: 12px; color: var(--text-muted);">База рецептов канала загружается...</p>
+        <p style="font-size: 12px; color: var(--text-muted);">База проверенных рецептов канала...</p>
     </div>
 </div>
 
@@ -119,15 +156,46 @@
 
     function processRecipe() {
         const text = document.getElementById('recipeInput').value;
+        const custom = document.getElementById('customExclusions').value;
+
         if (!text) {
-            alert('Пожалуйста, введите рецепт!');
+            alert('Пожалуйста, вставьте исходный рецепт в поле №1!');
             return;
         }
+
+        // Собираем активные чипсы
+        let selectedExclusions = [];
+        document.querySelectorAll('.chip-toggle.active').forEach(chip => {
+            selectedExclusions.push(chip.innerText.replace('🚫 ', ''));
+        });
+
+        if (custom) {
+            selectedExclusions.push(custom);
+        }
+
+        // Отображаем блок с результатом
         document.getElementById('resultBox').style.display = 'block';
-        document.getElementById('resultText').innerHTML = 
-            '<p><strong>• Мука:</strong> 180г муки зелёной гречки + 1 ч.л. псиллиума</p>' +
-            '<p><strong>• Подсластитель:</strong> 70г Эритрита или Стевия по вкусу</p>' +
-            '<p><strong>• Масло:</strong> 40г Кокосового масла</p>';
+
+        document.getElementById('resTitle').innerText = "Полная чистая версия рецепта";
+        document.getElementById('resTime').innerText = "40-45 минут";
+        document.getElementById('resTemp').innerText = "170°C (средний уровень)";
+
+        document.getElementById('resIngredients').innerHTML = 
+            '<li><b>180г</b> муки зелёной гречки / киноа (вместо пшеничной)</li>' +
+            '<li><b>1 ч.л.</b> псиллиума (для эластичности теста без глютена)</li>' +
+            '<li><b>70г</b> Эритрита или Стевия по вкусу (строго без сахара и меда)</li>' +
+            '<li><b>40г</b> растопленного масла гхи или кокосового (без коровьего молока)</li>' +
+            '<li><b>150мл</b> воды или дозволенного растительного молока</li>' +
+            '<li style="color:#d96b6b; margin-top:6px; font-weight:600;">🚫 Заменено и исключено: ' + selectedExclusions.join(', ') + '</li>';
+
+        document.getElementById('resSteps').innerHTML = 
+            '<li><b>Подготовка:</b> Разогрейте духовку до 170°C. Просейте муку зелёной гречки и смешайте с псиллиумом и эритритом.</li>' +
+            '<li><b>Замес:</b> Влейте жидкие ингредиенты в сухую смесь, перемешайте до однородности.</li>' +
+            '<li><b>Отдых теста:</b> Обязательно дайте тесту постоять 7–10 минут, чтобы псиллиум впитал влагу и связал структуру без яиц и глютена.</li>' +
+            '<li><b>Выпекание:</b> Переложите в форму и выпекайте 40–45 минут. Проверяйте готовность деревянной шпажкой.</li>';
+
+        document.getElementById('resTips').innerText = 
+            'Альтернативная мука без глютена требует чуть больше времени для пропекания при более низкой температуре (170°C), чтобы середина не осталась влажной.';
     }
 </script>
 
