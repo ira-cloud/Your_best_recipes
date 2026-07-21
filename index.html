@@ -77,7 +77,7 @@
         <p>Адаптация и подбор рецептов</p>
     </div>
 
-    <!-- Скрытая панель настройки ключа (открывается по клику на заголовок) -->
+    <!-- Панель ключа -->
     <div id="apiPanel" class="api-panel">
         <input type="password" id="apiKeyInput" placeholder="Введите API ключ..." onchange="saveApiKey()">
     </div>
@@ -87,14 +87,14 @@
         <button class="tab" onclick="switchTab('curator')">🔍 Найти рецепт</button>
     </div>
 
-    <!-- БАЗОВЫЕ ПРАВИЛА И ИСКЛЮЧЕНИЯ (ОБЩИЕ) -->
+    <!-- ПРАВИЛА И ИСКЛЮЧЕНИЯ -->
     <div style="padding: 12px 16px 0 16px; background: #fafcfa; border-bottom: 1px solid var(--border);">
         <div class="section-label" style="margin-top:0;">Базовые правила:</div>
         <div style="font-size: 11px; color: var(--primary); margin-bottom: 6px; font-weight: 600;">
             ✅ Без глютена &nbsp;•&nbsp; ✅ Без сахара &nbsp;•&nbsp; ✅ Без молочки
         </div>
 
-        <div class="section-label">Исключения (нажмите, чтобы убрать):</div>
+        <div class="section-label">Исключения:</div>
         <div class="chips-grid">
             <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Магазинный майонез</div>
             <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Кетчуп / Соусы с сахаром</div>
@@ -121,7 +121,6 @@
     <div id="adapter" class="tab-content active" style="padding-top: 12px;">
         <div class="section-label" style="margin-top:0;">Вставьте обычный рецепт:</div>
         <textarea id="recipeInput" placeholder="Вставьте текст любого рецепта из интернета..."></textarea>
-
         <button class="btn-primary" onclick="adaptRecipe()">Адаптировать рецепт</button>
         <div id="resultBox" class="result-card" style="display:none;"></div>
     </div>
@@ -130,7 +129,6 @@
     <div id="curator" class="tab-content" style="padding-top: 12px;">
         <div class="section-label" style="margin-top:0;">Название блюда:</div>
         <input type="text" id="searchInput" placeholder="Например: Оливье, Сырники, Борщ...">
-
         <button class="btn-primary" onclick="generateRecipe()" style="margin-top: 0;">Создать чистый рецепт</button>
         <div id="searchResults"></div>
     </div>
@@ -185,9 +183,7 @@
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: promptText }] }]
-                })
+                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
             });
 
             const data = await response.json();
@@ -217,15 +213,14 @@
         const prompt = `Составь идеальный, кулинарно корректный и вкусный рецепт блюда: "${dishName}".
 Обязательные правила:
 1. КАТЕГОРИЧЕСКИ ИСКЛЮЧИ следующие ингредиенты: ${exclusions.join(', ')}.
-2. Подбери логичные замены (например, полезные заправки вместо майонеза, безопасную муку и подсластители без сахара). Никакого запекания для холодных салатов!
-3. Никаких покупных соусов, магазинного майонеза и кетчупа.
+2. Подбери логичные полезные замены. Никакого сахара, только эритрит или стевия. Никакого магазинного майонеза.
 
-Формат ответа напиши на чистом HTML (без markdown и без кода \`\`\`html):
+Формат ответа на чистом HTML (без markdown и без кода \`\`\`html):
 <span class="badge">Чистый рецепт</span>
 <div class="result-title">✨ ${dishName}</div>
 <div class="recipe-section">
   <h4>🥣 Ингредиенты:</h4>
-  <ul>...список li с точными граммами...</ul>
+  <ul>...список li...</ul>
 </div>
 <div class="recipe-section">
   <h4>📝 Пошаговое приготовление:</h4>
@@ -258,11 +253,9 @@
         resultBox.innerHTML = '<div class="loading-spinner">🔄 Адаптируем рецепт...</div>';
 
         const prompt = `Адаптируй этот рецепт, полностью исключив из него: ${exclusions.join(', ')}.
-Исходный рецепт:
-"${recipeText}"
-
+Исходный рецепт: "${recipeText}"
 Замени запрещенные компоненты на полезные альтернативы.
-Верни результат в виде чистого HTML (без markdown и тэгов \`\`\`):
+Верни результат в виде чистого HTML (без markdown и тегов \`\`\`):
 <span class="badge">Адаптированный рецепт</span>
 <div class="result-title">✨ Результат адаптации</div>
 <div class="recipe-section">
