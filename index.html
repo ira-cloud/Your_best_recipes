@@ -1,1 +1,137 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean Eats Hub</title>
+    <style>
+        :root {
+            --bg-color: #f7f9f6;
+            --card-bg: #ffffff;
+            --primary: #4a6b5d;
+            --accent: #88a795;
+            --danger: #d96b6b;
+            --text-dark: #2c3e35;
+            --text-muted: #708078;
+            --border: #e2e8e4;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-dark); display: flex; justify-content: center; padding: 12px; }
+
+        .phone-mockup {
+            width: 100%; max-width: 390px; background: var(--card-bg);
+            border-radius: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+            border: 1px solid var(--border); overflow: hidden; display: flex; flex-direction: column;
+        }
+
+        .header { background: var(--primary); color: white; padding: 18px 16px; text-align: center; }
+        .header h1 { font-size: 18px; font-weight: 600; }
+        .header p { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+
+        .tabs { display: flex; background: #edf2ee; border-bottom: 1px solid var(--border); }
+        .tab { flex: 1; padding: 12px 8px; text-align: center; font-size: 11px; font-weight: 600; color: var(--text-muted); cursor: pointer; border: none; background: none; }
+        .tab.active { background: var(--card-bg); color: var(--primary); border-bottom: 2px solid var(--primary); }
+
+        .tab-content { padding: 16px; display: none; }
+        .tab-content.active { display: block; }
+
+        textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+            border-radius: 10px; font-size: 12px; margin-bottom: 10px; background: #fbfdfc; outline: none;
+            height: 80px; resize: none;
+        }
+
+        .section-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 8px 0 6px 0; }
+
+        .chips-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+        .chip-toggle {
+            font-size: 11px; padding: 5px 10px; border-radius: 16px; border: 1px solid var(--border);
+            background: #f0f4f1; color: var(--text-dark); cursor: pointer; user-select: none; transition: all 0.2s;
+        }
+        .chip-toggle.active { background: #fde8e8; border-color: var(--danger); color: #a83232; font-weight: 600; }
+
+        button.btn-primary {
+            width: 100%; padding: 12px; background: var(--primary); color: white;
+            border: none; border-radius: 10px; font-weight: 600; font-size: 13px; cursor: pointer;
+        }
+
+        .result-box { margin-top: 12px; background: #f4f8f5; border: 1px dashed var(--accent); border-radius: 12px; padding: 12px; font-size: 12px; line-height: 1.5; }
+        .badge { display: inline-block; padding: 3px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; background: #e1efe6; color: var(--primary); margin-bottom: 6px; }
+        .badge-alert { background: #fde8e8; color: #a83232; }
+    </style>
+</head>
+<body>
+
+<div class="phone-mockup">
+    <div class="header">
+        <h1>Clean Eats Hub</h1>
+        <p>Адаптация рецептов без глютена, сахара и молочки</p>
+    </div>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('adapter')">🔄 Адаптер</button>
+        <button class="tab" onclick="switchTab('curator')">🔍 Поиск</button>
+    </div>
+
+    <div id="adapter" class="tab-content active">
+        <div class="section-label">1. Вставьте обычный рецепт:</div>
+        <textarea id="recipeInput" placeholder="Например: 200г пшеничной муки, 100г сахара, 2 яйца..."></textarea>
+
+        <div class="section-label">2. Базовые правила:</div>
+        <div style="font-size: 11px; color: var(--primary); margin-bottom: 8px;">
+            ✅ Без глютена &nbsp;•&nbsp; ✅ Без сахара &nbsp;•&nbsp; ✅ Без молочки
+        </div>
+
+        <div class="section-label">3. Исключения / Аллергии:</div>
+        <div class="chips-grid">
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Орехи</div>
+            <div class="chip-toggle active" onclick="toggleChip(this)">🚫 Яйца</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Кокос</div>
+            <div class="chip-toggle" onclick="toggleChip(this)">🚫 Паслёновые</div>
+        </div>
+
+        <button class="btn-primary" onclick="processRecipe()">Адаптировать рецепт</button>
+
+        <div id="resultBox" class="result-box" style="display:none;">
+            <span class="badge">Результат</span>
+            <span class="badge badge-alert">Адаптировано под ваши правила</span>
+            <div id="resultText"></div>
+        </div>
+    </div>
+
+    <div id="curator" class="tab-content">
+        <p style="font-size: 12px; color: var(--text-muted);">База рецептов канала загружается...</p>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        event.currentTarget.classList.add('active');
+    }
+
+    function toggleChip(el) {
+        el.classList.toggle('active');
+    }
+
+    function processRecipe() {
+        const text = document.getElementById('recipeInput').value;
+        if (!text) {
+            alert('Пожалуйста, введите рецепт!');
+            return;
+        }
+        document.getElementById('resultBox').style.display = 'block';
+        document.getElementById('resultText').innerHTML = 
+            '<p><strong>• Мука:</strong> 180г муки зелёной гречки + 1 ч.л. псиллиума</p>' +
+            '<p><strong>• Подсластитель:</strong> 70г Эритрита или Стевия по вкусу</p>' +
+            '<p><strong>• Масло:</strong> 40г Кокосового масла</p>';
+    }
+</script>
+
+</body>
+</html>
+
 
