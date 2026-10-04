@@ -709,6 +709,15 @@ ${note ? `Уточнение от пользователя (доверяй ем�
     }
 
     // ---------- Напоминание ----------
+    // Страница не может работать, когда она закрыта, поэтому основное напоминание
+    // ставится в календарь телефона — он уведомит даже при закрытом браузере.
+    // Таймер внутри страницы — дополнительный, на случай если приложение открыто.
+    const REMINDER_TEXT = 'Пора перекусить, чтобы сахар оставался стабильным: белок + овощи или горсть ягод.';
+
+    if ('serviceWorker' in navigator && location.protocol === 'https:') {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+
     async function setReminder(hours) {
         const at = Date.now() + hours * 3600 * 1000;
         localStorage.setItem('ce_reminder', String(at));
@@ -723,18 +732,67 @@ ${note ? `Уточнение от пользователя (доверяй ем�
         const banner = document.getElementById('reminderBanner');
         const time = new Date(at).toTimeString().slice(0, 5);
         banner.style.display = 'block';
-        banner.textContent = `⏰ Следующий приём пищи в ${time} — для стабильного сахара. (Напоминание сработает, пока приложение открыто.)`;
+        banner.innerHTML = `⏰ Следующий приём пищи в <b>${time}</b> — для стабильного сахара.
+            <div style="margin-top:4px;">Чтобы напоминание пришло, даже если приложение закрыто, добавьте его в календарь телефона:</div>
+            <div class="btn-row">
+                <button class="btn-secondary" style="margin-top:6px;" onclick="downloadIcs(${at})">📅 Календарь телефона</button>
+                <button class="btn-secondary" style="margin-top:6px;" onclick="openGoogleCalendar(${at})">Google Календарь</button>
+            </div>`;
         reminderTimer = setTimeout(fireReminder, Math.max(0, at - Date.now()));
     }
 
-    function fireReminder() {
+    function calStamp(ms) {
+        return new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    }
+
+    // .ics со встроенным будильником (VALARM): iPhone и Android открывают его в календаре
+    function downloadIcs(at) {
+        const ics = [
+            'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Clean Eats Hub//RU', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+            'BEGIN:VEVENT',
+            `UID:${at}@clean-eats-hub`,
+            `DTSTAMP:${calStamp(Date.now())}`,
+            `DTSTART:${calStamp(at)}`,
+            `DTEND:${calStamp(at + 15 * 60 * 1000)}`,
+            'SUMMARY:🍏 Время перекусить',
+            `DESCRIPTION:${REMINDER_TEXT}`,
+            'BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:PT0M', 'DESCRIPTION:Время перекусить', 'END:VALARM',
+            'END:VEVENT', 'END:VCALENDAR'
+        ].join('\r\n');
+        const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'perekus.ics';
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(link.href), 10000);
+    }
+
+    function openGoogleCalendar(at) {
+        const params = new URLSearchParams({
+            action: 'TEMPLATE',
+            text: '🍏 Время перекусить',
+            dates: `${calStamp(at)}/${calStamp(at + 15 * 60 * 1000)}`,
+            details: REMINDER_TEXT
+        });
+        window.open('https://calendar.google.com/calendar/render?' + params, '_blank');
+    }
+
+    async function fireReminder() {
         localStorage.removeItem('ce_reminder');
-        const msg = 'Пора перекусить, чтобы сахар оставался стабильным: белок + овощи или горсть ягод.';
-        document.getElementById('reminderBanner').textContent = '🍏 ' + msg;
-        if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Clean Eats Hub', { body: msg });
-        } else {
-            alert(msg);
+        document.getElementById('reminderBanner').textContent = '🍏 ' + REMINDER_TEXT;
+        if (!('Notification' in window) || Notification.permission !== 'granted') {
+            alert(REMINDER_TEXT);
+            return;
+        }
+        // На Android new Notification() запрещён — показываем через service worker
+        try {
+            const reg = await navigator.serviceWorker?.getRegistration();
+            if (reg) { reg.showNotification('Clean Eats Hub', { body: REMINDER_TEXT }); return; }
+            new Notification('Clean Eats Hub', { body: REMINDER_TEXT });
+        } catch (e) {
+            alert(REMINDER_TEXT);
         }
     }
 
