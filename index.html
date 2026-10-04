@@ -403,7 +403,7 @@
         fork: 'столовая вилка: длина ~19–20 см, ширина головки ~2,5 см',
         spoon: 'столовая ложка: длина ~18–19 см, черпак ~4,5 × 6 см, вмещает ~15 мл'
     };
-    const REMINDER_HOURS = 2.5;
+    const REMINDER_HOURS = 4;
 
     let profile = { gender: 'female', ref: 'fork', age: '', weight: '', height: '' };
     let camStream = null;
@@ -652,7 +652,7 @@ ${note ? `Уточнение от пользователя (доверяй ем�
                 <button class="btn-secondary" onclick="addToDay()">➕ В дневник</button>
             </div>
             <button class="btn-secondary" onclick="setReminder(${REMINDER_HOURS})">⏰ Напомнить поесть через ${REMINDER_HOURS} ч</button>
-            <p style="font-size:10px; color:var(--text-muted); margin-top:6px;">Через 2–3 часа стоит перекусить (белок + клетчатка), чтобы сахар оставался стабильным. Оценка по фото приблизительная.</p>
+            <p style="font-size:10px; color:var(--text-muted); margin-top:6px;">Следующий приём пищи — примерно через 4 часа (белок + клетчатка), чтобы сахар оставался стабильным. Оценка по фото приблизительная.</p>
         </div>`;
     }
 
