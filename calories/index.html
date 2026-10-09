@@ -97,6 +97,17 @@
         .chips-row button { font-size: 11px; padding: 5px 9px; border-radius: 14px; border: 1px solid var(--border); background: #fff; cursor: pointer; }
         .chips-row button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
         .oil-box { background: #fffbea; border: 1px solid #f2e2a0; border-radius: 8px; padding: 8px; margin-top: 8px; }
+        .plan-card { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px; background: #fafcfa; }
+        .plan-card summary { font-size: 13px; font-weight: 700; color: var(--primary); cursor: pointer; }
+        .plan-card summary span { font-weight: 500; font-size: 11px; color: var(--text-muted); }
+        .plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; margin-top: 10px; }
+        .plan-grid label { font-size: 10px; color: var(--text-muted); font-weight: 600; }
+        .plan-grid input, .plan-grid select { width: 100%; padding: 9px 10px; border: 1px solid var(--border); border-radius: 10px; font-size: 12px; margin: 3px 0 8px; background: #fff; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 11px; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+        .tag { font-size: 10px; padding: 1px 6px; border-radius: 8px; font-weight: 600; }
+        .tag.ok { background: #e1efe6; color: #2f6b47; } .tag.warn { background: #fff1d6; color: #8a5a00; } .tag.bad { background: #fde2e2; color: #a83232; }
+        .advice { font-size: 11px; padding-left: 16px; margin-top: 4px; }
+        .advice li { margin-bottom: 3px; }
         .reminder-banner { background: #fff8eb; border: 1px solid #ffe3b3; color: #664d00; border-radius: 10px; padding: 8px 10px; font-size: 11px; margin-bottom: 10px; display: none; }
         .content { padding: 16px; }
     </style>
@@ -122,11 +133,31 @@
             <button data-v="female" onclick="setProfile('gender', 'female')">👩 Женщина</button>
             <button data-v="male" onclick="setProfile('gender', 'male')">👨 Мужчина</button>
         </div>
-        <div class="profile-row">
-            <input type="text" inputmode="numeric" id="pAge" placeholder="Возраст" onchange="setProfile('age', this.value)">
-            <input type="text" inputmode="numeric" id="pWeight" placeholder="Вес, кг" onchange="setProfile('weight', this.value)">
-            <input type="text" inputmode="numeric" id="pHeight" placeholder="Рост, см" onchange="setProfile('height', this.value)">
-        </div>
+        <details class="plan-card" id="planCard">
+            <summary>🎯 Мой план <span id="planSummary"></span></summary>
+            <div class="plan-grid">
+                <label>Возраст<input type="text" inputmode="numeric" id="pAge" placeholder="лет" onchange="setProfile('age', this.value)"></label>
+                <label>Рост<input type="text" inputmode="decimal" id="pHeight" placeholder="см" onchange="setProfile('height', this.value)"></label>
+                <label>Вес сейчас<input type="text" inputmode="decimal" id="pWeight" placeholder="кг" onchange="setProfile('weight', this.value)"></label>
+                <label>Талия<input type="text" inputmode="decimal" id="pWaist" placeholder="см" onchange="setProfile('waist', this.value)"></label>
+                <label>Цель — вес<input type="text" inputmode="decimal" id="pTarget" placeholder="кг" onchange="setProfile('target', this.value)"></label>
+                <label>Активность
+                    <select id="pActivity" onchange="setProfile('activity', this.value)">
+                        <option value="1.2">Сидячая</option>
+                        <option value="1.375">Лёгкая (1–3 трен./нед.)</option>
+                        <option value="1.55">Средняя (3–5 трен./нед.)</option>
+                        <option value="1.725">Высокая (6–7 трен./нед.)</option>
+                    </select>
+                </label>
+            </div>
+            <div class="section-label">Темп</div>
+            <div class="seg" id="paceSeg">
+                <button data-v="soft" onclick="setProfile('pace', 'soft')">🐢 Мягкий</button>
+                <button data-v="normal" onclick="setProfile('pace', 'normal')">🚶 Обычный</button>
+                <button data-v="fast" onclick="setProfile('pace', 'fast')">🏃 Быстрый</button>
+            </div>
+            <div id="planBody"></div>
+        </details>
 
         <div class="section-label">Как сфотографировать:</div>
         <div style="font-size:11px; line-height:1.5; margin-bottom:8px;">
@@ -259,7 +290,7 @@
     const MEAL_INTERVAL_HOURS = 4.5; // между приёмами пищи
     const REMINDER_LEAD_MIN = 30;    // напоминание за 30 минут, т.е. через 4 часа
 
-    let profile = { gender: 'female', age: '', weight: '', height: '' };
+    let profile = { gender: 'female', age: '', weight: '', height: '', waist: '', target: '', activity: '1.375', pace: 'normal' };
     let camStream = null;
     let photoData = null; // { mime, base64 }
     let lastAnalysis = null;
@@ -276,13 +307,18 @@
         document.getElementById('pAge').value = profile.age || '';
         document.getElementById('pWeight').value = profile.weight || '';
         document.getElementById('pHeight').value = profile.height || '';
+        document.getElementById('pWaist').value = profile.waist || '';
+        document.getElementById('pTarget').value = profile.target || '';
+        document.getElementById('pActivity').value = profile.activity || '1.375';
+        // Пока план не заполнен — держим карточку открытой
+        document.getElementById('planCard').open = !getPlan().complete;
         renderProfile();
         renderDay();
         restoreReminder();
     }
 
     function setProfile(key, value) {
-        profile[key] = value;
+        profile[key] = String(value).replace(',', '.');
         localStorage.setItem('ce_profile', JSON.stringify(profile));
         renderProfile();
         renderDay();
@@ -293,22 +329,122 @@
         // Женская рука на рамке чуть меньше мужской (масштаб от запястья у левого края)
         const s = profile.gender === 'male' ? 1 : 0.88;
         document.getElementById('handShape').setAttribute('transform', `translate(0 ${118 * (1 - s)}) scale(${s})`);
+        document.querySelectorAll('#paceSeg button').forEach(b => b.classList.toggle('active', b.dataset.v === profile.pace));
+        renderPlan();
     }
 
-    // Суточные нормы: Миффлин–Сан Жеор при заполненном профиле, иначе средние значения
-    function getNorms() {
+    // ---------- План: ИМТ, цель, суточные нормы ----------
+    const PACE = { // кг в неделю
+        lose: { soft: 0.25, normal: 0.5, fast: 0.75 },
+        gain: { soft: 0.15, normal: 0.25, fast: 0.4 }
+    };
+    const KCAL_PER_KG = 7700; // энергия 1 кг массы тела
+
+    function bmiInfo(bmi) {
+        if (bmi < 18.5) return ['Недостаточный вес', 'warn'];
+        if (bmi < 25) return ['Норма', 'ok'];
+        if (bmi < 30) return ['Избыточный вес', 'warn'];
+        return ['Ожирение', 'bad'];
+    }
+
+    function getPlan() {
         const male = profile.gender === 'male';
         const w = num(profile.weight), h = num(profile.height), a = num(profile.age);
-        let kcal = male ? 2500 : 2000;
-        if (w && h && a) kcal = Math.round((10 * w + 6.25 * h - 5 * a + (male ? 5 : -161)) * 1.4);
-        return {
-            kcal,
-            protein: Math.round(w ? w * 1.2 : (male ? 75 : 60)),
-            fat: Math.round(kcal * 0.3 / 9),
-            carbs: Math.round(kcal * 0.5 / 4),
+        const waist = num(profile.waist), target = num(profile.target);
+        const activity = num(profile.activity) || 1.375;
+        const complete = !!(w && h && a);
+        const plan = { male, w, h, a, waist, target, complete, notes: [] };
+
+        if (!complete) {
+            // Средние значения, пока профиль не заполнен
+            plan.goal = 'maintain';
+            plan.kcal = male ? 2500 : 2000;
+            plan.refW = male ? 75 : 60;
+        } else {
+            const m = h / 100;
+            plan.bmi = w / (m * m);
+            plan.healthyMin = Math.round(18.5 * m * m);
+            plan.healthyMax = Math.round(24.9 * m * m);
+            if (waist) plan.whtr = waist / h; // отношение талии к росту
+            plan.bmr = 10 * w + 6.25 * h - 5 * a + (male ? 5 : -161);
+            plan.tdee = plan.bmr * activity;
+
+            const diff = target ? target - w : 0;
+            plan.goal = Math.abs(diff) < 1 ? 'maintain' : diff < 0 ? 'lose' : 'gain';
+            plan.kcal = plan.tdee;
+            if (plan.goal !== 'maintain') {
+                const pace = PACE[plan.goal][profile.pace] || PACE[plan.goal].normal;
+                const delta = pace * KCAL_PER_KG / 7;
+                plan.kcal = plan.goal === 'lose' ? plan.tdee - delta : plan.tdee + delta;
+                // Не опускаемся ниже базового обмена и безопасного минимума
+                const floor = Math.max(plan.bmr, male ? 1500 : 1200);
+                if (plan.kcal < floor) {
+                    plan.kcal = floor;
+                    plan.notes.push('Выбранный темп слишком жёсткий — калории ограничены безопасным минимумом, похудение пойдёт медленнее.');
+                }
+                plan.paceReal = Math.abs(plan.kcal - plan.tdee) * 7 / KCAL_PER_KG;
+                plan.weeks = Math.ceil(Math.abs(diff) / plan.paceReal);
+                const targetBmi = target / (m * m);
+                if (targetBmi < 18.5) plan.notes.push(`Целевой вес ниже здоровой нормы для вашего роста (${plan.healthyMin}–${plan.healthyMax} кг). Лучше обсудить цель с врачом.`);
+            }
+            // При лишнем весе белок и жиры считаем от веса при ИМТ 25, иначе норма завышена
+            plan.refW = Math.min(w, 25 * m * m);
+        }
+        plan.kcal = Math.round(plan.kcal / 10) * 10;
+
+        const proteinPerKg = { lose: 1.6, maintain: 1.2, gain: 1.8 }[plan.goal];
+        const protein = Math.round(plan.refW * proteinPerKg);
+        const fat = Math.round(Math.max(plan.kcal * 0.3 / 9, plan.refW * 0.8));
+        plan.norms = {
+            kcal: plan.kcal,
+            protein,
+            fat,
+            carbs: Math.max(0, Math.round((plan.kcal - protein * 4 - fat * 9) / 4)),
             sugar: male ? 36 : 25, // добавленный сахар, рекомендация ВОЗ/AHA
-            fiber: male ? 30 : 25
+            fiber: Math.max(male ? 30 : 25, Math.round(plan.kcal / 1000 * 14))
         };
+        return plan;
+    }
+
+    function getNorms() { return getPlan().norms; }
+
+    const ru = (v, d = 1) => num(v).toFixed(d).replace('.', ',');
+
+    function goalText(p) {
+        if (p.goal === 'lose') return `похудеть до ${p.target} кг`;
+        if (p.goal === 'gain') return `набрать до ${p.target} кг`;
+        return 'поддерживать вес';
+    }
+
+    function renderPlan() {
+        const p = getPlan(), n = p.norms;
+        document.getElementById('planSummary').textContent = p.complete ? `· ${goalText(p)} · ${n.kcal} ккал` : '· заполните, чтобы рассчитать норму';
+        if (!p.complete) {
+            document.getElementById('planBody').innerHTML = '<p style="font-size:11px; color:var(--text-muted);">Укажите возраст, рост и вес — рассчитаю ИМТ и вашу норму калорий. Пока используются средние значения.</p>';
+            return;
+        }
+        const [bmiText, bmiCls] = bmiInfo(p.bmi);
+        let whtr = '';
+        if (p.whtr) {
+            const [t, c] = p.whtr < 0.5 ? ['Норма', 'ok'] : p.whtr < 0.6 ? ['Повышенный риск', 'warn'] : ['Высокий риск', 'bad'];
+            whtr = `<div class="stat-row"><span>Талия / рост</span><span>${ru(p.whtr, 2)} <span class="tag ${c}">${t}</span></span></div>`;
+        }
+        const goalLine = p.goal === 'maintain'
+            ? 'Цель: поддерживать вес — едим ровно столько, сколько тратим.'
+            : `Цель: ${goalText(p)} (${ru(Math.abs(p.target - p.w))} кг) — около ${ru(p.paceReal, 2)} кг в неделю, ≈ ${p.weeks} нед.`;
+        document.getElementById('planBody').innerHTML = `
+            <div class="stat-row"><span>ИМТ</span><span>${ru(p.bmi)} <span class="tag ${bmiCls}">${bmiText}</span></span></div>
+            ${whtr}
+            <div class="stat-row"><span>Здоровый вес для роста</span><span>${p.healthyMin}–${p.healthyMax} кг</span></div>
+            <div class="stat-row"><span>Расход в день</span><span>${Math.round(p.tdee)} ккал</span></div>
+            <p style="font-size:11px; margin-top:8px;">${goalLine}</p>
+            <div class="macro-grid">
+                <div class="macro"><b>${n.kcal}</b><span>ккал/день</span></div>
+                <div class="macro"><b>${n.protein}</b><span>белки, г</span></div>
+                <div class="macro"><b>${n.fat}</b><span>жиры, г</span></div>
+                <div class="macro"><b>${n.carbs}</b><span>углев., г</span></div>
+            </div>
+            ${p.notes.map(t => `<p style="font-size:11px; color:#8a5a00; margin-top:4px;">⚠️ ${t}</p>`).join('')}`;
     }
 
     // ---------- Камера ----------
@@ -411,7 +547,7 @@
         const box = document.getElementById('calResult');
         if (!photoData) { alert('Сначала сфотографируйте тарелку или выберите фото'); return; }
         const note = document.getElementById('mealNote').value.trim();
-        const norms = getNorms();
+        const plan = getPlan(), norms = plan.norms;
         box.innerHTML = '<div class="loading-spinner">🔬 Анализируем тарелку...</div>';
 
         const prompt = `Ты нутрициолог. На фото тарелка с едой. Рядом с тарелкой лежит левая рука пользователя (ладонью вниз, большой палец вдоль края тарелки)
@@ -431,6 +567,7 @@
 Если масло уже видно в самой еде (блестит, лужица), учитывай его в items как обычно.
 ${note ? `Уточнение от пользователя (доверяй ему больше, чем фото): "${note}".` : ''}
 Пользователь: ${profile.gender === 'male' ? 'мужчина' : 'женщина'}${profile.age ? ', ' + profile.age + ' лет' : ''}${profile.weight ? ', ' + profile.weight + ' кг' : ''}.
+Цель пользователя: ${goalText(plan)}.${plan.bmi ? ' ИМТ ' + plan.bmi.toFixed(1) + '.' : ''}
 Суточные нормы пользователя: ${norms.kcal} ккал, белок ${norms.protein} г, жиры ${norms.fat} г, углеводы ${norms.carbs} г, добавленный сахар не более ${norms.sugar} г, клетчатка ${norms.fiber} г.
 
 Оцени гликемический скачок сахара в крови от этого блюда (например, бутерброд с белым хлебом — высокий) и дай конкретные советы, как его снизить
@@ -451,6 +588,7 @@ ${note ? `Уточнение от пользователя (доверяй ем�
  "doubts": ["уточняющий вопрос"],
  "spoon": {"visible": true/false, "has_liquid": true/false, "fill_fraction": 0-1, "oil_guess": "sunflower|olive|linseed|coconut|ghee|butter|unknown", "note": "что видно в ложке"},
  "butter": {"visible": true/false, "grams": число, "note": "где лежит кусочек сливочного масла"},
+ "goal_advice": ["1–3 совета по этой тарелке с учётом цели пользователя: что убрать, уменьшить или добавить"],
  "summary": "2–3 предложения итога для озвучки"
 }`;
 
@@ -547,6 +685,22 @@ ${note ? `Уточнение от пользователя (доверяй ем�
         </div>`;
     }
 
+    // Сколько этот приём пищи занимает от дневной нормы (из расчёта 3 приёма в день)
+    function renderMealVsPlan(a, t) {
+        const p = getPlan(), n = p.norms;
+        const mealKcal = Math.round(n.kcal / 3 / 10) * 10;
+        const pct = Math.round(num(t.kcal) / n.kcal * 100);
+        const rows = [['protein', 'Белки'], ['fat', 'Жиры'], ['carbs', 'Углеводы']].map(([k, label]) =>
+            `<div class="stat-row"><span>${label}</span><span>${r0(t[k])} г · ${Math.round(num(t[k]) / n[k] * 100)}% дневной нормы</span></div>`).join('');
+        return `<div class="recipe-section">
+            <h4>🎯 Для вашей цели (${goalText(p)}):</h4>
+            <div class="stat-row"><span>Калории</span><span>${r0(t.kcal)} из ${n.kcal} ккал · ${pct}%</span></div>
+            ${rows}
+            <p style="font-size:10px; color:var(--text-muted); margin-top:4px;">Ориентир на один приём: ~${mealKcal} ккал${num(t.kcal) > mealKcal * 1.25 ? ' — эта тарелка больше ориентира' : ''}.</p>
+            ${a.goal_advice?.length ? `<ul class="advice">${a.goal_advice.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+        </div>`;
+    }
+
     function renderAnalysis(a) {
         const t = getTotals(a);
         const norms = getNorms();
@@ -577,6 +731,8 @@ ${note ? `Уточнение от пользователя (доверяй ем�
             </table>
             ${renderOil(a)}
             ${renderButter(a)}
+
+            ${renderMealVsPlan(a, t)}
 
             <div class="recipe-section">
                 <h4>🍬 Сахар: ${sugar.toFixed(1)} г из ${norms.sugar} г в день (${sugarPct}%)</h4>
@@ -624,6 +780,38 @@ ${note ? `Уточнение от пользователя (доверяй ем�
         renderDay();
     }
 
+    // Что недобрано / перебрано за день и чем это закрыть
+    function dayAdvice(sum, n, plan) {
+        const out = [];
+        const kcalLeft = n.kcal - sum.kcal;
+        if (kcalLeft > 0) out.push(`<li>Осталось <b>${r0(kcalLeft)} ккал</b> на сегодня.</li>`);
+        else if (-kcalLeft > n.kcal * 0.05) {
+            const tip = plan.goal === 'lose' ? ' Для похудения следующий приём сделайте лёгким: овощи + белок, без хлеба и сладкого.'
+                : plan.goal === 'gain' ? ' Для набора это нормально, следите, чтобы перебор шёл за счёт белка.' : '';
+            out.push(`<li>Норма калорий превышена на <b>${r0(-kcalLeft)} ккал</b>.${tip}</li>`);
+        }
+
+        const pLeft = n.protein - sum.protein;
+        if (pLeft > 5) {
+            const eggs = Math.ceil(pLeft / 6); // ~6 г белка в яйце
+            const eggText = eggs <= 4 ? `, или ${eggs} ${eggs === 1 ? 'яйцо' : 'яйца'}` : '';
+            out.push(`<li>Недобрано <b>${r0(pLeft)} г белка</b> — это ≈ ${Math.round(pLeft / 0.23 / 10) * 10} г куриной грудки или рыбы${eggText}.</li>`);
+        }
+
+        const fLeft = n.fat - sum.fat;
+        if (fLeft > 5) out.push(`<li>Недобрано <b>${r0(fLeft)} г жиров</b> — ≈ ${ru(fLeft / 13.7)} ст. л. оливкового масла, половина авокадо или горсть семечек.</li>`);
+        else if (-fLeft > n.fat * 0.15) out.push(`<li>Жиров больше нормы на <b>${r0(-fLeft)} г</b> — в следующий раз меньше масла в ложке, выбирайте нежирное мясо.</li>`);
+
+        const cLeft = n.carbs - sum.carbs;
+        if (cLeft > 15) out.push(`<li>Недобрано <b>${r0(cLeft)} г углеводов</b> — ≈ ${Math.round(cLeft / 0.2 / 10) * 10} г готовой гречки или крупы, либо овощи и фрукт.</li>`);
+        else if (-cLeft > n.carbs * 0.15) out.push(`<li>Углеводов больше нормы на <b>${r0(-cLeft)} г</b> — замените гарнир на овощи в следующем приёме.</li>`);
+
+        const fbLeft = n.fiber - sum.fiber;
+        if (fbLeft > 5) out.push(`<li>Клетчатки не хватает <b>${r0(fbLeft)} г</b> — добавьте овощи, зелень, бобовые или ягоды.</li>`);
+        if (sum.sugar > n.sugar) out.push(`<li>Сахар выше нормы на <b>${r0(sum.sugar - n.sugar)} г</b> — сегодня без сладкого.</li>`);
+        return out;
+    }
+
     function renderDay() {
         const day = getDay();
         const norms = getNorms();
@@ -640,20 +828,15 @@ ${note ? `Уточнение от пользователя (доверяй ем�
                     <div class="bar"><i class="${over ? 'over' : ''}" style="width:${Math.min(pct, 100)}%"></i></div>`;
         }).join('');
 
-        const left = [];
-        if (day.length) {
-            if (sum.protein < norms.protein) left.push(`белка ещё ~${r0(norms.protein - sum.protein)} г`);
-            if (sum.fat < norms.fat) left.push(`жиров ~${r0(norms.fat - sum.fat)} г`);
-            if (sum.fiber < norms.fiber) left.push(`клетчатки ~${r0(norms.fiber - sum.fiber)} г (овощи, зелень, бобовые)`);
-        }
+        const advice = day.length ? dayAdvice(sum, norms, getPlan()) : [];
         const meals = day.map(m => `<li>${esc(m.time)} — ${esc(m.dish)} (${r0(m.totals.kcal)} ккал)</li>`).join('');
 
         document.getElementById('dayBody').innerHTML = `
-            <div style="font-size:10px; color:var(--text-muted); margin-bottom:6px;">Нормы для: ${profile.gender === 'male' ? 'мужчины' : 'женщины'}${profile.weight ? ', ' + esc(profile.weight) + ' кг' : ''}</div>
+            <div style="font-size:10px; color:var(--text-muted); margin-bottom:6px;">Нормы под цель: ${goalText(getPlan())}</div>
             ${bars}
             ${meals ? `<div class="recipe-section"><h4>🍽 Приёмы пищи:</h4><ul>${meals}</ul></div>` : '<p style="font-size:11px; color:var(--text-muted);">Пока ничего не добавлено.</p>'}
             ${sum.sugar > norms.sugar ? `<p style="color:var(--danger); font-size:11px; margin-top:6px;">⚠️ Норма сахара на сегодня превышена.</p>` : ''}
-            ${left.length ? `<p style="font-size:11px; margin-top:6px;">Чтобы закрыть норму, не хватает: ${left.join(', ')}.</p>` : ''}`;
+            ${advice.length ? `<div class="recipe-section"><h4>📋 Рекомендации на остаток дня:</h4><ul class="advice">${advice.join('')}</ul></div>` : ''}`;
     }
 
     // ---------- Напоминание ----------
