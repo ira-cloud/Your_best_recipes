@@ -159,6 +159,41 @@
             <div id="planBody"></div>
         </details>
 
+        <details class="plan-card" id="activityCard">
+            <summary>⌚ Активность сегодня <span id="activitySummary"></span></summary>
+            <div id="activityBody" style="margin-top:8px;"></div>
+            <div class="btn-row">
+                <button class="btn-secondary" onclick="pasteActivity()">📋 Вставить из Здоровья</button>
+                <button class="btn-secondary" onclick="toggleManualActivity()">✏️ Ввести вручную</button>
+            </div>
+            <div id="manualActivity" style="display:none; margin-top:8px;">
+                <div class="plan-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                    <label>Шаги<input type="text" inputmode="numeric" id="aSteps"></label>
+                    <label>Активные ккал<input type="text" inputmode="numeric" id="aActive"></label>
+                    <label>Трениров., мин<input type="text" inputmode="numeric" id="aExercise"></label>
+                </div>
+                <button class="btn-primary" style="margin-top:0;" onclick="saveManualActivity()">Сохранить</button>
+            </div>
+            <details style="margin-top:10px;">
+                <summary style="font-size:11px; font-weight:600;">Как подключить Apple Здоровье и кольцо Oura</summary>
+                <div style="font-size:11px; line-height:1.55; margin-top:6px;">
+                    <p>Веб-приложение не может само читать Apple Здоровье — это доступно только приложениям из App Store. Поэтому данные передаёт команда iPhone: один раз настроить, дальше одно нажатие или автоматически.</p>
+                    <p style="margin-top:6px;"><b>💍 Кольцо Oura:</b> в приложении Oura → Профиль → Настройки → Приложения и интеграции → <b>Apple Здоровье</b> → разрешите запись шагов, активности и тренировок. Тогда данные кольца попадут в Здоровье и дальше в это приложение.</p>
+                    <p style="margin-top:6px;"><b>📱 Команда в приложении «Команды»</b> (Shortcuts) → «+» → назовите «Калории: активность» и добавьте действия:</p>
+                    <ol style="padding-left:16px;">
+                        <li><b>Найти образцы здоровья</b>: тип «Шаги», дата начала — «Сегодня». Затем <b>Вычислить статистику</b> → «Сумма».</li>
+                        <li>То же для «Активная энергия» (сумма) и «Минуты упражнений» (сумма).</li>
+                        <li><b>Текст</b>: <code>steps=</code>[сумма шагов]<code>&amp;active=</code>[сумма энергии]<code>&amp;exercise=</code>[сумма минут]</li>
+                        <li><b>Скопировать в буфер обмена</b> (этот текст).</li>
+                        <li><b>Открыть URL-адреса</b>: <code id="healthUrl"></code>[Текст]</li>
+                    </ol>
+                    <p style="margin-top:6px;">Если приложение открывается в Safari — данные подтянутся сами. Если оно установлено на экран «Домой», откройте его и нажмите <b>«📋 Вставить из Здоровья»</b>.</p>
+                    <p style="margin-top:6px;"><b>⏰ Автоматически:</b> Команды → Автоматизация → «Время суток», например 13:00 и 19:00 → запустить эту команду → «Запускать сразу».</p>
+                    <p style="margin-top:6px; color:var(--text-muted);">Названия пунктов могут немного отличаться в разных версиях iOS.</p>
+                </div>
+            </details>
+        </details>
+
         <div class="section-label">Как сфотографировать:</div>
         <div style="font-size:11px; line-height:1.5; margin-bottom:8px;">
             ✋ <b>Левую руку</b> положите ровно над тарелкой, большой палец — вдоль края тарелки.<br>
@@ -314,6 +349,8 @@
         document.getElementById('planCard').open = !getPlan().complete;
         renderProfile();
         renderDay();
+        importActivityFromUrl();
+        renderActivity();
         restoreReminder();
     }
 
@@ -331,6 +368,97 @@
         document.getElementById('handShape').setAttribute('transform', `translate(0 ${118 * (1 - s)}) scale(${s})`);
         document.querySelectorAll('#paceSeg button').forEach(b => b.classList.toggle('active', b.dataset.v === profile.pace));
         renderPlan();
+        renderActivity();
+    }
+
+    // ---------- Активность (Apple Здоровье / Oura через команду iPhone) ----------
+    // Локальная дата: toISOString() дал бы дату по UTC и после полуночи «вчера»
+    function localDate(d = new Date()) {
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    }
+    function activityKey() { return 'ce_activity_' + localDate(); }
+    function getActivity() { try { return JSON.parse(localStorage.getItem(activityKey()) || 'null'); } catch (e) { return null; } }
+
+    // Разбирает "steps=8432&active=512,5&exercise=45" — так текст отдаёт команда iPhone (числа бывают с пробелами и запятой)
+    function parseActivity(text) {
+        const get = key => {
+            const m = String(text).match(new RegExp(key + '=([\\d\\s\\u00a0.,]+)'));
+            return m ? Math.round(parseFloat(m[1].replace(/[\s ]/g, '').replace(',', '.'))) || 0 : null;
+        };
+        const data = { steps: get('steps'), active: get('active'), exercise: get('exercise') };
+        return Object.values(data).some(v => v !== null) ? data : null;
+    }
+
+    function saveActivity(data, source) {
+        const clean = { steps: data.steps || 0, active: data.active || 0, exercise: data.exercise || 0, source, time: new Date().toTimeString().slice(0, 5) };
+        localStorage.setItem(activityKey(), JSON.stringify(clean));
+        renderActivity();
+        renderProfile();
+        renderDay();
+    }
+
+    async function pasteActivity() {
+        let text = '';
+        try { text = await navigator.clipboard.readText(); } catch (e) {}
+        if (!text) text = prompt('Вставьте текст из команды (steps=…&active=…&exercise=…):') || '';
+        const data = parseActivity(text);
+        if (!data) { alert('Не нашёл данных. Сначала запустите команду «Калории: активность».'); return; }
+        saveActivity(data, 'Apple Здоровье');
+    }
+
+    function toggleManualActivity() {
+        const box = document.getElementById('manualActivity');
+        box.style.display = box.style.display === 'none' ? 'block' : 'none';
+        const a = getActivity() || {};
+        document.getElementById('aSteps').value = a.steps || '';
+        document.getElementById('aActive').value = a.active || '';
+        document.getElementById('aExercise').value = a.exercise || '';
+    }
+
+    function saveManualActivity() {
+        saveActivity({
+            steps: r0(document.getElementById('aSteps').value.replace(/\s/g, '')),
+            active: r0(document.getElementById('aActive').value),
+            exercise: r0(document.getElementById('aExercise').value)
+        }, 'вручную');
+        document.getElementById('manualActivity').style.display = 'none';
+    }
+
+    // Данные, пришедшие из команды через адрес ...?steps=..&active=..
+    function importActivityFromUrl() {
+        if (!location.search) return;
+        let query = location.search.replace(/\+/g, ' ');
+        try { query = decodeURIComponent(query); } catch (e) {}
+        const data = parseActivity(query);
+        if (!data) return;
+        saveActivity(data, 'Apple Здоровье');
+        history.replaceState(null, '', location.pathname);
+    }
+
+    // Активные ккал: из Здоровья, а если есть только шаги — оценка (~0,035 ккал на шаг при весе 70 кг)
+    function activeKcal(a, weight) {
+        if (!a) return 0;
+        if (a.active) return a.active;
+        return Math.round(a.steps * 0.0005 * (weight || 70));
+    }
+
+    function renderActivity() {
+        const a = getActivity();
+        document.getElementById('healthUrl').textContent = location.origin + location.pathname + '?';
+        document.getElementById('activitySummary').textContent = a ? `· ${a.steps.toLocaleString('ru-RU')} шагов · +${activeKcal(a, num(profile.weight))} ккал` : '· не подключено';
+        if (!a) {
+            document.getElementById('activityBody').innerHTML = '<p style="font-size:11px; color:var(--text-muted);">Подключите Apple Здоровье (и кольцо Oura через него) — норма калорий будет учитывать реальные шаги и тренировки.</p>';
+            return;
+        }
+        const p = getPlan();
+        document.getElementById('activityBody').innerHTML = `
+            <div class="macro-grid" style="grid-template-columns: repeat(3, 1fr); margin-top:0;">
+                <div class="macro"><b>${a.steps.toLocaleString('ru-RU')}</b><span>шагов</span></div>
+                <div class="macro"><b>${activeKcal(a, p.w)}</b><span>активных ккал${a.active ? '' : ' (оценка)'}</span></div>
+                <div class="macro"><b>${a.exercise}</b><span>мин трениров.</span></div>
+            </div>
+            <p style="font-size:10px; color:var(--text-muted);">Обновлено в ${esc(a.time)} · ${esc(a.source)}</p>
+            ${p.fromDevice ? `<p style="font-size:11px; margin-top:4px;">Норма на сегодня пересчитана по реальной активности: <b>${p.kcal} ккал</b>.</p>` : ''}`;
     }
 
     // ---------- План: ИМТ, цель, суточные нормы ----------
@@ -368,6 +496,14 @@
             if (waist) plan.whtr = waist / h; // отношение талии к росту
             plan.bmr = 10 * w + 6.25 * h - 5 * a + (male ? 5 : -161);
             plan.tdee = plan.bmr * activity;
+            // Если есть данные часов/кольца за сегодня — расход считаем по ним:
+            // базовый обмен + переваривание пищи (~15%) + активные ккал, но не ниже сидячего уровня
+            const act = getActivity();
+            if (act && (act.active || act.steps)) {
+                plan.plannedTdee = plan.tdee;
+                plan.tdee = Math.max(plan.bmr * 1.15 + activeKcal(act, w), plan.bmr * 1.2);
+                plan.fromDevice = true;
+            }
 
             const diff = target ? target - w : 0;
             plan.goal = Math.abs(diff) < 1 ? 'maintain' : diff < 0 ? 'lose' : 'gain';
@@ -436,7 +572,7 @@
             <div class="stat-row"><span>ИМТ</span><span>${ru(p.bmi)} <span class="tag ${bmiCls}">${bmiText}</span></span></div>
             ${whtr}
             <div class="stat-row"><span>Здоровый вес для роста</span><span>${p.healthyMin}–${p.healthyMax} кг</span></div>
-            <div class="stat-row"><span>Расход в день</span><span>${Math.round(p.tdee)} ккал</span></div>
+            <div class="stat-row"><span>Расход ${p.fromDevice ? 'сегодня (по часам/кольцу)' : 'в день'}</span><span>${Math.round(p.tdee)} ккал</span></div>
             <p style="font-size:11px; margin-top:8px;">${goalLine}</p>
             <div class="macro-grid">
                 <div class="macro"><b>${n.kcal}</b><span>ккал/день</span></div>
@@ -567,7 +703,7 @@
 Если масло уже видно в самой еде (блестит, лужица), учитывай его в items как обычно.
 ${note ? `Уточнение от пользователя (доверяй ему больше, чем фото): "${note}".` : ''}
 Пользователь: ${profile.gender === 'male' ? 'мужчина' : 'женщина'}${profile.age ? ', ' + profile.age + ' лет' : ''}${profile.weight ? ', ' + profile.weight + ' кг' : ''}.
-Цель пользователя: ${goalText(plan)}.${plan.bmi ? ' ИМТ ' + plan.bmi.toFixed(1) + '.' : ''}
+Цель пользователя: ${goalText(plan)}.${plan.bmi ? ' ИМТ ' + plan.bmi.toFixed(1) + '.' : ''}${(() => { const a = getActivity(); return a ? ` Активность сегодня: ${a.steps} шагов, ${activeKcal(a, plan.w)} активных ккал, ${a.exercise} мин тренировок.` : ''; })()}
 Суточные нормы пользователя: ${norms.kcal} ккал, белок ${norms.protein} г, жиры ${norms.fat} г, углеводы ${norms.carbs} г, добавленный сахар не более ${norms.sugar} г, клетчатка ${norms.fiber} г.
 
 Оцени гликемический скачок сахара в крови от этого блюда (например, бутерброд с белым хлебом — высокий) и дай конкретные советы, как его снизить
@@ -761,7 +897,7 @@ ${note ? `Уточнение от пользователя (доверяй ем�
     }
 
     // ---------- Дневник за день ----------
-    function todayKey() { return 'ce_day_' + new Date().toISOString().slice(0, 10); }
+    function todayKey() { return 'ce_day_' + localDate(); }
     function getDay() { try { return JSON.parse(localStorage.getItem(todayKey()) || '[]'); } catch (e) { return []; } }
 
     function addToDay() {
@@ -829,6 +965,8 @@ ${note ? `Уточнение от пользователя (доверяй ем�
         }).join('');
 
         const advice = day.length ? dayAdvice(sum, norms, getPlan()) : [];
+        const act = getActivity();
+        if (act) advice.unshift(`<li>⌚ Сегодня ${act.steps.toLocaleString('ru-RU')} шагов и ${act.exercise} мин тренировок — потрачено ещё ~${activeKcal(act, num(profile.weight))} ккал, это уже учтено в норме.</li>`);
         const meals = day.map(m => `<li>${esc(m.time)} — ${esc(m.dish)} (${r0(m.totals.kcal)} ккал)</li>`).join('');
 
         document.getElementById('dayBody').innerHTML = `
