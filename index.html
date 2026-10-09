@@ -77,7 +77,7 @@
         .cam-box { position: relative; width: 100%; aspect-ratio: 3 / 4; background: #1f2a24; border-radius: 14px; overflow: hidden; margin-bottom: 8px; }
         .cam-box video, .cam-box img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
         .cam-box svg.overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-        .cam-hint { position: absolute; left: 0; right: 0; top: 14px; text-align: center; color: #cfe0d6; font-size: 12px; padding: 0 20px; }
+        .cam-hint { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; color: #cfe0d6; font-size: 11px; padding: 0 16px; }
         .btn-row { display: flex; gap: 6px; }
         .btn-row button { flex: 1; }
         button.btn-secondary { width: 100%; padding: 11px; background: #edf2ee; color: var(--primary); border: 1px solid var(--border); border-radius: 10px; font-weight: 600; font-size: 12px; cursor: pointer; margin-top: 8px; }
@@ -97,6 +97,10 @@
         .spike.medium { background: #fff8eb; border: 1px solid #ffe3b3; }
         .spike.high { background: #fdecec; border: 1px solid #f3baba; }
         .doubt { background: #f4f1fb; border: 1px solid #ddd3f3; border-radius: 8px; padding: 8px; margin-top: 8px; }
+        .chips-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+        .chips-row button { font-size: 11px; padding: 5px 9px; border-radius: 14px; border: 1px solid var(--border); background: #fff; cursor: pointer; }
+        .chips-row button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+        .oil-box { background: #fffbea; border: 1px solid #f2e2a0; border-radius: 8px; padding: 8px; margin-top: 8px; }
         .reminder-banner { background: #fff8eb; border: 1px solid #ffe3b3; color: #664d00; border-radius: 10px; padding: 8px 10px; font-size: 11px; margin-bottom: 10px; display: none; }
     </style>
 </head>
@@ -180,48 +184,39 @@
             <input type="text" inputmode="numeric" id="pHeight" placeholder="Рост, см" onchange="setProfile('height', this.value)">
         </div>
 
-        <div class="section-label">Мерка справа от тарелки:</div>
-        <div class="seg" id="refSeg">
-            <button data-v="fork" onclick="setProfile('ref', 'fork')">🍴 Вилка</button>
-            <button data-v="spoon" onclick="setProfile('ref', 'spoon')">🥄 Столовая ложка</button>
+        <div class="section-label">Как сфотографировать:</div>
+        <div style="font-size:11px; line-height:1.5; margin-bottom:8px;">
+            ✋ <b>Левую руку</b> положите ровно над тарелкой, большой палец — вдоль края тарелки.<br>
+            🥄 <b>Столовую ложку</b> положите под тарелкой. Налейте в неё столько масла, сколько добавили в блюдо — приложение посчитает скрытые жиры.
         </div>
 
         <div class="section-label">Сфотографируйте тарелку:</div>
         <div class="cam-box" id="camBox">
             <video id="camVideo" playsinline muted style="display:none;"></video>
             <img id="camPhoto" alt="" style="display:none;">
-            <div class="cam-hint" id="camHint">Положите руку слева от тарелки, а вилку или ложку справа — по ним определяется размер порции</div>
-            <svg class="overlay" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice">
-                <!-- рука слева -->
+            <div class="cam-hint" id="camHint">Рука сверху, тарелка в центре, ложка с маслом снизу — по ним определяется размер порции</div>
+            <svg class="overlay" id="camOverlay" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice">
+                <!-- левая рука ладонью вниз, пальцы вправо, большой палец вдоль края тарелки -->
                 <g id="handShape" opacity="0.38" fill="#ffffff">
-                    <rect x="15" y="210" width="62" height="80" rx="22"/>
-                    <rect x="17" y="148" width="13" height="78" rx="6.5"/>
-                    <rect x="32" y="134" width="13" height="90" rx="6.5"/>
-                    <rect x="47" y="142" width="13" height="82" rx="6.5"/>
-                    <rect x="62" y="164" width="12" height="62" rx="6"/>
-                    <rect x="70" y="232" width="13" height="52" rx="6.5" transform="rotate(-35 76 258)"/>
-                    <rect x="22" y="280" width="48" height="40" rx="12"/>
+                    <rect x="-30" y="44" width="140" height="74" rx="26"/>
+                    <rect x="90" y="47" width="78" height="14" rx="7"/>
+                    <rect x="95" y="62" width="95" height="15" rx="7.5"/>
+                    <rect x="95" y="78" width="103" height="15" rx="7.5"/>
+                    <rect x="95" y="94" width="94" height="15" rx="7.5"/>
+                    <rect x="70" y="104" width="78" height="16" rx="8" transform="rotate(4 70 112)"/>
                 </g>
                 <!-- тарелка -->
-                <circle cx="160" cy="210" r="78" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-dasharray="8 6" opacity="0.8"/>
-                <circle cx="160" cy="210" r="55" fill="none" stroke="#ffffff" stroke-width="1" stroke-dasharray="4 6" opacity="0.5"/>
-                <!-- вилка справа -->
-                <g id="forkShape" opacity="0.38" fill="#ffffff">
-                    <rect x="256" y="112" width="4" height="40" rx="2"/>
-                    <rect x="263" y="112" width="4" height="40" rx="2"/>
-                    <rect x="270" y="112" width="4" height="40" rx="2"/>
-                    <rect x="277" y="112" width="4" height="40" rx="2"/>
-                    <rect x="256" y="148" width="25" height="18" rx="8"/>
-                    <rect x="264" y="160" width="9" height="150" rx="4.5"/>
+                <circle cx="168" cy="222" r="96" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-dasharray="8 6" opacity="0.8"/>
+                <circle cx="168" cy="222" r="68" fill="none" stroke="#ffffff" stroke-width="1" stroke-dasharray="4 6" opacity="0.5"/>
+                <!-- столовая ложка под тарелкой, черпак справа -->
+                <g opacity="0.38" fill="#ffffff">
+                    <rect x="55" y="341" width="130" height="8" rx="4" transform="rotate(-3 120 345)"/>
+                    <ellipse cx="210" cy="340" rx="27" ry="14"/>
                 </g>
-                <!-- ложка справа -->
-                <g id="spoonShape" opacity="0.38" fill="#ffffff" style="display:none;">
-                    <ellipse cx="268" cy="140" rx="14" ry="22"/>
-                    <rect x="264" y="158" width="8" height="152" rx="4"/>
-                </g>
-                <text x="48" y="345" fill="#fff" font-size="11" text-anchor="middle" opacity="0.85">рука</text>
-                <text x="160" y="310" fill="#fff" font-size="11" text-anchor="middle" opacity="0.85">тарелка</text>
-                <text x="268" y="335" fill="#fff" font-size="11" text-anchor="middle" opacity="0.85" id="refLabel">вилка</text>
+                <ellipse cx="212" cy="340" rx="17" ry="8" fill="#f2c94c" opacity="0.6"/>
+                <text x="60" y="36" fill="#fff" font-size="11" text-anchor="middle" opacity="0.85">левая рука</text>
+                <text x="168" y="226" fill="#fff" font-size="11" text-anchor="middle" opacity="0.7">тарелка</text>
+                <text x="120" y="330" fill="#fff" font-size="11" text-anchor="middle" opacity="0.85">ложка + масло</text>
             </svg>
         </div>
         <div class="btn-row">
@@ -396,16 +391,25 @@
     // ================= АНАЛИЗАТОР КАЛОРИЙ =================
     // Средние размеры эталонов, по которым модель оценивает масштаб тарелки
     const HAND_SIZES = {
-        female: 'женская кисть: длина ~17–18 см (от запястья до кончика среднего пальца), ширина ладони ~7,5–8 см',
-        male: 'мужская кисть: длина ~19–20 см (от запястья до кончика среднего пальца), ширина ладони ~8,5–9 см'
+        female: 'женская кисть: длина ~17–18 см (от запястья до кончика среднего пальца), ширина ладони ~7,5–8 см, кулак ~8 × 9 см',
+        male: 'мужская кисть: длина ~19–20 см (от запястья до кончика среднего пальца), ширина ладони ~8,5–9 см, кулак ~9 × 10 см'
     };
-    const REF_SIZES = {
-        fork: 'столовая вилка: длина ~19–20 см, ширина головки ~2,5 см',
-        spoon: 'столовая ложка: длина ~18–19 см, черпак ~4,5 × 6 см, вмещает ~15 мл'
+    const SPOON_SIZE = 'столовая ложка: длина ~18–19 см, черпак ~4,5 × 6 см, полная ложка вмещает 15 мл';
+    const SPOON_ML = 15;
+    // Масла: плотность г/мл, доля жира, ккал на 100 г
+    const OILS = {
+        sunflower: { name: 'Подсолнечное', density: 0.92, fat: 1, kcal: 899 },
+        olive:     { name: 'Оливковое',    density: 0.91, fat: 1, kcal: 898 },
+        linseed:   { name: 'Льняное',      density: 0.93, fat: 1, kcal: 898 },
+        coconut:   { name: 'Кокосовое',    density: 0.92, fat: 1, kcal: 899 },
+        ghee:      { name: 'Топлёное (гхи)', density: 0.91, fat: 0.99, kcal: 892 },
+        butter:    { name: 'Сливочное',    density: 0.91, fat: 0.82, kcal: 748 }
     };
-    const REMINDER_HOURS = 4;
+    const FILLS = [[1, 'Полная'], [0.75, '¾'], [0.5, '½'], [0.33, '⅓'], [0.25, '¼'], [0, 'Нет масла']];
+    const MEAL_INTERVAL_HOURS = 4.5; // между приёмами пищи
+    const REMINDER_LEAD_MIN = 30;    // напоминание за 30 минут, т.е. через 4 часа
 
-    let profile = { gender: 'female', ref: 'fork', age: '', weight: '', height: '' };
+    let profile = { gender: 'female', age: '', weight: '', height: '' };
     let camStream = null;
     let photoData = null; // { mime, base64 }
     let lastAnalysis = null;
@@ -436,13 +440,9 @@
 
     function renderProfile() {
         document.querySelectorAll('#genderSeg button').forEach(b => b.classList.toggle('active', b.dataset.v === profile.gender));
-        document.querySelectorAll('#refSeg button').forEach(b => b.classList.toggle('active', b.dataset.v === profile.ref));
-        // Женская рука на рамке чуть меньше мужской
+        // Женская рука на рамке чуть меньше мужской (масштаб от запястья у левого края)
         const s = profile.gender === 'male' ? 1 : 0.88;
-        document.getElementById('handShape').setAttribute('transform', `translate(${46 * (1 - s)} ${300 * (1 - s)}) scale(${s})`);
-        document.getElementById('forkShape').style.display = profile.ref === 'fork' ? '' : 'none';
-        document.getElementById('spoonShape').style.display = profile.ref === 'spoon' ? '' : 'none';
-        document.getElementById('refLabel').textContent = profile.ref === 'fork' ? 'вилка' : 'ложка';
+        document.getElementById('handShape').setAttribute('transform', `translate(0 ${118 * (1 - s)}) scale(${s})`);
     }
 
     // Суточные нормы: Миффлин–Сан Жеор при заполненном профиле, иначе средние значения
@@ -474,6 +474,7 @@
             video.srcObject = camStream;
             await video.play();
             video.style.display = 'block';
+            document.getElementById('camOverlay').style.display = '';
             document.getElementById('camPhoto').style.display = 'none';
             document.getElementById('camHint').style.display = 'none';
             document.getElementById('camBtn').textContent = '📸 Сделать снимок';
@@ -526,6 +527,7 @@
         img.src = dataUrl;
         img.style.display = 'block';
         document.getElementById('camHint').style.display = 'none';
+        document.getElementById('camOverlay').style.display = 'none'; // рамка нужна только при съёмке
         document.getElementById('camBtn').textContent = '🔁 Переснять';
     }
 
@@ -546,7 +548,7 @@
     function speakResult() {
         if (!lastAnalysis || !window.speechSynthesis) return;
         speechSynthesis.cancel();
-        const a = lastAnalysis, t = a.totals || {};
+        const a = lastAnalysis, t = getTotals(a);
         const text = `${a.dish || 'Блюдо'}. Примерно ${r0(t.kcal)} килокалорий: белки ${r0(t.protein)} грамм, жиры ${r0(t.fat)}, углеводы ${r0(t.carbs)}, сахар ${r0(t.sugar)} грамм. ` +
             (a.summary || '') + ' ' + (a.glycemic?.tips?.length ? 'Совет: ' + a.glycemic.tips[0] : '');
         const u = new SpeechSynthesisUtterance(text);
@@ -562,11 +564,16 @@
         const norms = getNorms();
         box.innerHTML = '<div class="loading-spinner">🔬 Анализируем тарелку...</div>';
 
-        const prompt = `Ты нутрициолог. На фото тарелка с едой. Слева от тарелки лежит рука пользователя, справа — эталон масштаба.
-Эталоны для оценки размера тарелки и порции:
+        const prompt = `Ты нутрициолог. На фото тарелка с едой. Рядом с тарелкой лежит левая рука пользователя (ладонью вниз, большой палец вдоль края тарелки)
+и столовая ложка — эталоны масштаба:
 - ${HAND_SIZES[profile.gender]};
-- ${REF_SIZES[profile.ref]}.
-Определи диаметр тарелки по эталонам, затем объём и вес каждого продукта. Если рука или эталон не видны — оцени по типичной тарелке ~26 см и снизь confidence.
+- ${SPOON_SIZE}.
+Определи диаметр тарелки по руке и ложке, затем объём и вес каждого продукта. Размер кулака пользователя помогает оценить объём гарнира.
+Если рука или ложка не видны — оцени по типичной тарелке ~26 см и снизь confidence.
+
+В ложку пользователь может налить столько масла, сколько добавлено в блюдо (в кашах и гарнирах масло не видно).
+Посмотри на черпак ложки: есть ли в нём жидкость/масло и какая часть ложки заполнена (1 — полная, 0.5 — половина, 0.33 — треть, 0 — пустая).
+НЕ включай масло из ложки в items и totals — его посчитает приложение. Если видно, что масло уже есть в самой еде (блестит, лужица), учитывай его в items как обычно.
 ${note ? `Уточнение от пользователя (доверяй ему больше, чем фото): "${note}".` : ''}
 Пользователь: ${profile.gender === 'male' ? 'мужчина' : 'женщина'}${profile.age ? ', ' + profile.age + ' лет' : ''}${profile.weight ? ', ' + profile.weight + ' кг' : ''}.
 Суточные нормы пользователя: ${norms.kcal} ккал, белок ${norms.protein} г, жиры ${norms.fat} г, углеводы ${norms.carbs} г, добавленный сахар не более ${norms.sugar} г, клетчатка ${norms.fiber} г.
@@ -587,6 +594,7 @@ ${note ? `Уточнение от пользователя (доверяй ем�
  "glycemic": {"level": "low|medium|high", "glycemic_load": число, "reason": "почему", "tips": ["совет"]},
  "missing": ["чего не хватает в этой тарелке относительно сбалансированного приёма пищи"],
  "doubts": ["уточняющий вопрос"],
+ "spoon": {"visible": true/false, "has_liquid": true/false, "fill_fraction": 0-1, "oil_guess": "sunflower|olive|linseed|coconut|ghee|butter|unknown", "note": "что видно в ложке"},
  "summary": "2–3 предложения итога для озвучки"
 }`;
 
@@ -598,11 +606,65 @@ ${note ? `Уточнение от пользователя (доверяй ем�
             box.innerHTML = '<div class="result-card">Не удалось разобрать ответ. Попробуйте ещё раз.</div>';
             return;
         }
+        const sp = lastAnalysis.spoon || {};
+        lastAnalysis.oil = {
+            fill: sp.has_liquid ? Math.min(1, Math.max(0, num(sp.fill_fraction))) : 0,
+            type: OILS[sp.oil_guess] ? sp.oil_guess : null, // вид масла лучше уточнить у пользователя
+            detected: !!sp.has_liquid,
+            note: sp.note || ''
+        };
         renderAnalysis(lastAnalysis);
     }
 
+    function oilNutrition(oil) {
+        if (!oil || !oil.fill) return null;
+        const o = OILS[oil.type || 'sunflower'];
+        const grams = SPOON_ML * oil.fill * o.density;
+        return { grams, fat: grams * o.fat, kcal: grams * o.kcal / 100, name: o.name };
+    }
+
+    // Итоги тарелки + масло из ложки
+    function getTotals(a) {
+        const t = { ...(a.totals || {}) };
+        const oil = oilNutrition(a.oil);
+        if (oil) {
+            t.grams = num(t.grams) + oil.grams;
+            t.fat = num(t.fat) + oil.fat;
+            t.kcal = num(t.kcal) + oil.kcal;
+        }
+        return t;
+    }
+
+    function setOil(key, value) {
+        if (!lastAnalysis) return;
+        lastAnalysis.oil[key] = value;
+        if (key === 'fill') lastAnalysis.oil.note = ''; // подсказка модели больше не актуальна
+        renderAnalysis(lastAnalysis);
+    }
+
+    function renderOil(a) {
+        const oil = a.oil || {};
+        const n = oilNutrition(oil);
+        const fills = FILLS.map(([v, label]) =>
+            `<button class="${Math.abs(oil.fill - v) < 0.05 ? 'active' : ''}" onclick="setOil('fill', ${v})">${label}</button>`).join('');
+        const types = Object.entries(OILS).map(([k, o]) =>
+            `<button class="${oil.type === k ? 'active' : ''}" onclick="setOil('type', '${k}')">${o.name}</button>`).join('');
+        const head = oil.detected
+            ? `🥄 В ложке масло: ${FILLS.find(([v]) => Math.abs(oil.fill - v) < 0.05)?.[1] || Math.round(oil.fill * 100) + '%'} ложки`
+            : '🥄 Масла в ложке не видно';
+        return `<div class="oil-box">
+            <h4 style="font-size:12px;">${head}</h4>
+            ${oil.note ? `<p style="font-size:10px; color:var(--text-muted);">${esc(oil.note)}</p>` : ''}
+            ${n ? `<p style="font-size:11px; margin-top:4px;">+ <b>${n.grams.toFixed(1)} г</b> масла = <b>${n.fat.toFixed(1)} г жиров</b>, ${r0(n.kcal)} ккал (уже добавлено в итог)</p>` : ''}
+            <div style="font-size:10px; margin-top:6px;">Сколько масла в ложке? Поправьте, если не так:</div>
+            <div class="chips-row">${fills}</div>
+            ${oil.fill ? `<div style="font-size:10px; margin-top:6px;">${oil.type ? 'Какое масло:' : '❓ Какое это масло? (по желанию, иначе считаем как подсолнечное)'}</div>
+            <div class="chips-row">${types}</div>` : ''}
+        </div>`;
+    }
+
     function renderAnalysis(a) {
-        const t = a.totals || {};
+        const t = getTotals(a);
         const norms = getNorms();
         const level = ['low', 'medium', 'high'].includes(a.glycemic?.level) ? a.glycemic.level : 'medium';
         const levelText = { low: '🟢 Низкий', medium: '🟡 Средний', high: '🔴 Высокий' }[level];
@@ -629,6 +691,7 @@ ${note ? `Уточнение от пользователя (доверяй ем�
                 <tr><th>Продукт</th><th>г</th><th>ккал</th><th>Б</th><th>Ж</th><th>У</th></tr>
                 ${items}
             </table>
+            ${renderOil(a)}
 
             <div class="recipe-section">
                 <h4>🍬 Сахар: ${sugar.toFixed(1)} г из ${norms.sugar} г в день (${sugarPct}%)</h4>
@@ -651,8 +714,8 @@ ${note ? `Уточнение от пользователя (доверяй ем�
                 <button class="btn-secondary" onclick="speakResult()">🔊 Озвучить</button>
                 <button class="btn-secondary" onclick="addToDay()">➕ В дневник</button>
             </div>
-            <button class="btn-secondary" onclick="setReminder(${REMINDER_HOURS})">⏰ Напомнить поесть через ${REMINDER_HOURS} ч</button>
-            <p style="font-size:10px; color:var(--text-muted); margin-top:6px;">Следующий приём пищи — примерно через 4 часа (белок + клетчатка), чтобы сахар оставался стабильным. Оценка по фото приблизительная.</p>
+            <button class="btn-secondary" onclick="setReminder()">⏰ Напомнить о следующем приёме пищи</button>
+            <p style="font-size:10px; color:var(--text-muted); margin-top:6px;">Следующий приём пищи — через 4,5 часа (белок + клетчатка), напоминание придёт за 30 минут. Оценка по фото приблизительная.</p>
         </div>`;
     }
 
@@ -663,11 +726,11 @@ ${note ? `Уточнение от пользователя (доверяй ем�
     function addToDay() {
         if (!lastAnalysis) return;
         const day = getDay();
-        day.push({ time: new Date().toTimeString().slice(0, 5), dish: lastAnalysis.dish, totals: lastAnalysis.totals || {} });
+        day.push({ time: new Date().toTimeString().slice(0, 5), dish: lastAnalysis.dish, totals: getTotals(lastAnalysis) });
         localStorage.setItem(todayKey(), JSON.stringify(day));
         renderDay();
         // После приёма пищи сразу предлагаем напоминание о следующем
-        setReminder(REMINDER_HOURS);
+        setReminder();
     }
 
     function clearDay() {
@@ -712,14 +775,15 @@ ${note ? `Уточнение от пользователя (доверяй ем�
     // Страница не может работать, когда она закрыта, поэтому основное напоминание
     // ставится в календарь телефона — он уведомит даже при закрытом браузере.
     // Таймер внутри страницы — дополнительный, на случай если приложение открыто.
-    const REMINDER_TEXT = 'Пора перекусить, чтобы сахар оставался стабильным: белок + овощи или горсть ягод.';
+    const REMINDER_TEXT = 'Через 30 минут — следующий приём пищи. Сахар будет стабильным: белок + овощи или горсть ягод.';
 
     if ('serviceWorker' in navigator && location.protocol === 'https:') {
         navigator.serviceWorker.register('sw.js').catch(() => {});
     }
 
-    async function setReminder(hours) {
-        const at = Date.now() + hours * 3600 * 1000;
+    // at — время самого напоминания (за 30 мин до еды), meal = at + 30 мин
+    async function setReminder() {
+        const at = Date.now() + MEAL_INTERVAL_HOURS * 3600 * 1000 - REMINDER_LEAD_MIN * 60 * 1000;
         localStorage.setItem('ce_reminder', String(at));
         if ('Notification' in window && Notification.permission === 'default') {
             try { await Notification.requestPermission(); } catch (e) {}
@@ -730,9 +794,10 @@ ${note ? `Уточнение от пользователя (доверяй ем�
     function scheduleReminder(at) {
         clearTimeout(reminderTimer);
         const banner = document.getElementById('reminderBanner');
-        const time = new Date(at).toTimeString().slice(0, 5);
+        const meal = at + REMINDER_LEAD_MIN * 60 * 1000;
+        const hhmm = ms => new Date(ms).toTimeString().slice(0, 5);
         banner.style.display = 'block';
-        banner.innerHTML = `⏰ Следующий приём пищи в <b>${time}</b> — для стабильного сахара.
+        banner.innerHTML = `⏰ Следующий приём пищи в <b>${hhmm(meal)}</b> (через ${String(MEAL_INTERVAL_HOURS).replace('.', ',')} ч), напоминание — в <b>${hhmm(at)}</b>.
             <div style="margin-top:4px;">Чтобы напоминание пришло, даже если приложение закрыто, добавьте его в календарь телефона:</div>
             <div class="btn-row">
                 <button class="btn-secondary" style="margin-top:6px;" onclick="downloadIcs(${at})">📅 Календарь телефона</button>
@@ -747,22 +812,23 @@ ${note ? `Уточнение от пользователя (доверяй ем�
 
     // .ics со встроенным будильником (VALARM): iPhone и Android открывают его в календаре
     function downloadIcs(at) {
+        const meal = at + REMINDER_LEAD_MIN * 60 * 1000;
         const ics = [
             'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Clean Eats Hub//RU', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
             'BEGIN:VEVENT',
             `UID:${at}@clean-eats-hub`,
             `DTSTAMP:${calStamp(Date.now())}`,
-            `DTSTART:${calStamp(at)}`,
-            `DTEND:${calStamp(at + 15 * 60 * 1000)}`,
-            'SUMMARY:🍏 Время перекусить',
+            `DTSTART:${calStamp(meal)}`,
+            `DTEND:${calStamp(meal + 30 * 60 * 1000)}`,
+            'SUMMARY:🍏 Приём пищи',
             `DESCRIPTION:${REMINDER_TEXT}`,
-            'BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:PT0M', 'DESCRIPTION:Время перекусить', 'END:VALARM',
+            'BEGIN:VALARM', 'ACTION:DISPLAY', `TRIGGER:-PT${REMINDER_LEAD_MIN}M`, 'DESCRIPTION:Через 30 минут приём пищи', 'END:VALARM',
             'END:VEVENT', 'END:VCALENDAR'
         ].join('\r\n');
         const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
-        link.download = 'perekus.ics';
+        link.download = 'priem-pishchi.ics';
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -770,10 +836,11 @@ ${note ? `Уточнение от пользователя (доверяй ем�
     }
 
     function openGoogleCalendar(at) {
+        const meal = at + REMINDER_LEAD_MIN * 60 * 1000;
         const params = new URLSearchParams({
             action: 'TEMPLATE',
-            text: '🍏 Время перекусить',
-            dates: `${calStamp(at)}/${calStamp(at + 15 * 60 * 1000)}`,
+            text: '🍏 Приём пищи',
+            dates: `${calStamp(meal)}/${calStamp(meal + 30 * 60 * 1000)}`,
             details: REMINDER_TEXT
         });
         window.open('https://calendar.google.com/calendar/render?' + params, '_blank');
