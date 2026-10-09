@@ -162,6 +162,7 @@
         <details class="plan-card" id="activityCard">
             <summary>⌚ Активность сегодня <span id="activitySummary"></span></summary>
             <div id="activityBody" style="margin-top:8px;"></div>
+            <div id="ouraRow"></div>
             <div class="btn-row">
                 <button class="btn-secondary" onclick="pasteActivity()">📋 Вставить из Здоровья</button>
                 <button class="btn-secondary" onclick="toggleManualActivity()">✏️ Ввести вручную</button>
@@ -178,7 +179,16 @@
                 <summary style="font-size:11px; font-weight:600;">Как подключить Apple Здоровье и кольцо Oura</summary>
                 <div style="font-size:11px; line-height:1.55; margin-top:6px;">
                     <p>Веб-приложение не может само читать Apple Здоровье — это доступно только приложениям из App Store. Поэтому данные передаёт команда iPhone: один раз настроить, дальше одно нажатие или автоматически.</p>
-                    <p style="margin-top:6px;"><b>💍 Кольцо Oura:</b> в приложении Oura → Профиль → Настройки → Приложения и интеграции → <b>Apple Здоровье</b> → разрешите запись шагов, активности и тренировок. Тогда данные кольца попадут в Здоровье и дальше в это приложение.</p>
+                    <p style="margin-top:6px;"><b>💍 Кольцо Oura напрямую (автоматически):</b></p>
+                    <ol style="padding-left:16px;">
+                        <li>Откройте <b>developer.ouraring.com</b> → My Applications → создайте приложение.</li>
+                        <li>В поле Redirect URI укажите адрес этого приложения: <code id="ouraRedirect"></code></li>
+                        <li>Скопируйте <b>Client ID</b> сюда и нажмите «Подключить Oura»:</li>
+                    </ol>
+                    <input type="text" id="ouraClientId" placeholder="Client ID приложения Oura" onchange="localStorage.setItem('oura_client_id', this.value.trim())">
+                    <p style="color:var(--text-muted);">Или вставьте готовый токен доступа (Personal Access Token), если он у вас есть:</p>
+                    <input type="password" id="ouraTokenInput" placeholder="Токен Oura" onchange="saveOuraToken(this.value)">
+                    <p style="margin-top:6px;"><b>💍 Или через Apple Здоровье:</b> в приложении Oura → Профиль → Настройки → Приложения и интеграции → <b>Apple Здоровье</b> → разрешите запись шагов, активности и тренировок. Тогда данные кольца попадут в Здоровье и дальше в это приложение.</p>
                     <p style="margin-top:6px;"><b>📱 Команда в приложении «Команды»</b> (Shortcuts) → «+» → назовите «Калории: активность» и добавьте действия:</p>
                     <ol style="padding-left:16px;">
                         <li><b>Найти образцы здоровья</b>: тип «Шаги», дата начала — «Сегодня». Затем <b>Вычислить статистику</b> → «Сумма».</li>
@@ -350,6 +360,7 @@
         renderProfile();
         renderDay();
         importActivityFromUrl();
+        autoSyncOura();
         renderActivity();
         restoreReminder();
     }
@@ -424,6 +435,97 @@
         document.getElementById('manualActivity').style.display = 'none';
     }
 
+    // ---------- Oura Cloud API v2 ----------
+    // Вход: OAuth2 «client-side flow» (токен приходит в #access_token) или готовый личный токен
+    const OURA_API = 'https://api.ouraring.com/v2/usercollection/';
+
+    function appUrl() { return location.origin + location.pathname; }
+    function ouraToken() {
+        const exp = num(localStorage.getItem('oura_token_exp'));
+        if (exp && exp < Date.now()) { localStorage.removeItem('oura_token'); return ''; }
+        return localStorage.getItem('oura_token') || '';
+    }
+
+    function saveOuraToken(token, expiresIn) {
+        token = String(token || '').trim();
+        if (!token) return;
+        localStorage.setItem('oura_token', token);
+        if (expiresIn) localStorage.setItem('oura_token_exp', String(Date.now() + num(expiresIn) * 1000));
+        else localStorage.removeItem('oura_token_exp');
+        syncOura();
+    }
+
+    function connectOura() {
+        const clientId = (document.getElementById('ouraClientId').value || localStorage.getItem('oura_client_id') || '').trim();
+        if (!clientId) {
+            document.getElementById('activityCard').open = true;
+            document.querySelector('#activityCard details').open = true;
+            alert('Сначала укажите Client ID приложения Oura (инструкция ниже).');
+            return;
+        }
+        localStorage.setItem('oura_client_id', clientId);
+        const params = new URLSearchParams({ response_type: 'token', client_id: clientId, redirect_uri: appUrl(), scope: 'daily workout', state: 'oura' });
+        location.href = 'https://cloud.ouraring.com/oauth/authorize?' + params;
+    }
+
+    function disconnectOura() {
+        localStorage.removeItem('oura_token');
+        localStorage.removeItem('oura_token_exp');
+        renderActivity();
+    }
+
+    // После входа Oura возвращает на наш адрес с #access_token=...&expires_in=...&state=oura
+    function handleOuraRedirect() {
+        if (!location.hash.includes('access_token')) return false;
+        const h = new URLSearchParams(location.hash.slice(1));
+        history.replaceState(null, '', location.pathname);
+        if (h.get('state') !== 'oura') return false;
+        saveOuraToken(h.get('access_token'), h.get('expires_in'));
+        return true;
+    }
+
+    async function ouraGet(path, token) {
+        const today = new Date();
+        const tomorrow = new Date(today.getTime() + 86400000);
+        const url = `${OURA_API}${path}?start_date=${localDate(today)}&end_date=${localDate(tomorrow)}`;
+        const res = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+        if (res.status === 401) throw new Error('auth');
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return (await res.json()).data || [];
+    }
+
+    async function syncOura(silent = false) {
+        const token = ouraToken();
+        if (!token) { renderActivity(); return; }
+        const status = document.getElementById('ouraStatus');
+        if (status) status.textContent = '🔄 Загружаю данные Oura...';
+        try {
+            const [days, workouts] = await Promise.all([ouraGet('daily_activity', token), ouraGet('workout', token)]);
+            const day = days.find(d => d.day === localDate()) || days[days.length - 1] || {};
+            const todays = workouts.filter(w => w.day === localDate());
+            let exercise = todays.reduce((acc, w) => acc + (new Date(w.end_datetime) - new Date(w.start_datetime)) / 60000, 0);
+            if (!exercise) exercise = (num(day.high_activity_time) + num(day.medium_activity_time)) / 60; // секунды → минуты
+            saveActivity({ steps: r0(day.steps), active: r0(day.active_calories), exercise: r0(exercise) }, 'кольцо Oura');
+            localStorage.setItem('oura_last_sync', String(Date.now()));
+        } catch (e) {
+            if (e.message === 'auth') {
+                disconnectOura();
+                if (!silent) alert('Доступ к Oura истёк — нажмите «Подключить Oura» ещё раз.');
+            } else if (!silent) {
+                alert('Не удалось получить данные Oura: ' + (e.message === 'Failed to fetch'
+                    ? 'браузер не пустил запрос к серверу Oura. Пока используйте путь через Apple Здоровье.'
+                    : e.message));
+            }
+            renderActivity();
+        }
+    }
+
+    // При открытии приложения — подтягиваем свежие данные, не чаще раза в 15 минут
+    function autoSyncOura() {
+        if (handleOuraRedirect()) return;
+        if (ouraToken() && Date.now() - num(localStorage.getItem('oura_last_sync')) > 15 * 60000) syncOura(true);
+    }
+
     // Данные, пришедшие из команды через адрес ...?steps=..&active=..
     function importActivityFromUrl() {
         if (!location.search) return;
@@ -444,10 +546,18 @@
 
     function renderActivity() {
         const a = getActivity();
-        document.getElementById('healthUrl').textContent = location.origin + location.pathname + '?';
+        document.getElementById('healthUrl').textContent = appUrl() + '?';
+        document.getElementById('ouraRedirect').textContent = appUrl();
+        const clientInput = document.getElementById('ouraClientId');
+        if (!clientInput.value) clientInput.value = localStorage.getItem('oura_client_id') || '';
+        document.getElementById('ouraRow').innerHTML = ouraToken()
+            ? `<div class="btn-row"><button class="btn-secondary" onclick="syncOura()">🔄 Обновить из Oura</button>
+               <button class="btn-secondary" onclick="disconnectOura()">Отключить Oura</button></div>
+               <p id="ouraStatus" style="font-size:10px; color:var(--text-muted); margin-top:4px;">💍 Oura подключено — данные обновляются при открытии приложения.</p>`
+            : `<button class="btn-secondary" onclick="connectOura()">💍 Подключить кольцо Oura</button>`;
         document.getElementById('activitySummary').textContent = a ? `· ${a.steps.toLocaleString('ru-RU')} шагов · +${activeKcal(a, num(profile.weight))} ккал` : '· не подключено';
         if (!a) {
-            document.getElementById('activityBody').innerHTML = '<p style="font-size:11px; color:var(--text-muted);">Подключите Apple Здоровье (и кольцо Oura через него) — норма калорий будет учитывать реальные шаги и тренировки.</p>';
+            document.getElementById('activityBody').innerHTML = '<p style="font-size:11px; color:var(--text-muted);">Подключите кольцо Oura или Apple Здоровье — норма калорий будет учитывать реальные шаги и тренировки.</p>';
             return;
         }
         const p = getPlan();
@@ -724,6 +834,8 @@ ${note ? `Уточнение от пользователя (доверяй ем�
  "doubts": ["уточняющий вопрос"],
  "spoon": {"visible": true/false, "has_liquid": true/false, "fill_fraction": 0-1, "oil_guess": "sunflower|olive|linseed|coconut|ghee|butter|unknown", "note": "что видно в ложке"},
  "butter": {"visible": true/false, "grams": число, "note": "где лежит кусочек сливочного масла"},
+ "plate_split": {"veg_fruit": % площади тарелки под овощами/зеленью/фруктами, "grains": % под крупами/хлебом/картофелем/макаронами, "protein": % под мясом/рыбой/яйцами/бобовыми/творогом, "other": % под остальным (сладкое, соусы, колбаса и т.п.)},
+ "plate_comment": "одно предложение: чем тарелка отличается от Гарвардской тарелки здорового питания",
  "goal_advice": ["1–3 совета по этой тарелке с учётом цели пользователя: что убрать, уменьшить или добавить"],
  "summary": "2–3 предложения итога для озвучки"
 }`;
@@ -821,6 +933,34 @@ ${note ? `Уточнение от пользователя (доверяй ем�
         </div>`;
     }
 
+    // Гарвардская тарелка здорового питания: ½ овощи и фрукты, ¼ цельные злаки, ¼ полезный белок
+    const HARVARD = [
+        ['veg_fruit', '🥦 Овощи и фрукты', 50],
+        ['grains', '🌾 Цельные злаки', 25],
+        ['protein', '🍗 Белок', 25],
+        ['other', '🍰 Остальное', 0]
+    ];
+
+    function renderHarvard(a) {
+        const sp = a.plate_split;
+        if (!sp) return '';
+        const total = HARVARD.reduce((acc, [k]) => acc + num(sp[k]), 0) || 100;
+        const share = k => Math.round(num(sp[k]) / total * 100);
+        // Совпадение: 100% минус половина суммы отклонений от идеала
+        const match = Math.max(0, 100 - Math.round(HARVARD.reduce((acc, [k, , ideal]) => acc + Math.abs(share(k) - ideal), 0) / 2));
+        const rows = HARVARD.map(([k, label, ideal]) => {
+            const v = share(k), off = Math.abs(v - ideal) > 10;
+            return `<div class="bar-label"><span>${label}</span><span>${v}% <span style="color:var(--text-muted)">· норма ${ideal}%</span></span></div>
+                <div class="bar" style="position:relative;"><i class="${off ? 'over' : ''}" style="width:${v}%"></i>${ideal ? `<b style="position:absolute; top:-2px; left:${ideal}%; width:2px; height:10px; background:var(--primary);"></b>` : ''}</div>`;
+        }).join('');
+        return `<div class="recipe-section">
+            <h4>🎯 Гарвардская тарелка: совпадение ${match}%</h4>
+            ${rows}
+            ${a.plate_comment ? `<p style="font-size:11px; margin-top:2px;">${esc(a.plate_comment)}</p>` : ''}
+            <p style="font-size:10px; color:var(--text-muted); margin-top:2px;">Идеал Гарвардской школы общественного здравоохранения: ½ — овощи и фрукты (больше овощей), ¼ — цельные злаки, ¼ — полезный белок, плюс полезные масла и вода.</p>
+        </div>`;
+    }
+
     // Сколько этот приём пищи занимает от дневной нормы (из расчёта 3 приёма в день)
     function renderMealVsPlan(a, t) {
         const p = getPlan(), n = p.norms;
@@ -868,6 +1008,7 @@ ${note ? `Уточнение от пользователя (доверяй ем�
             ${renderOil(a)}
             ${renderButter(a)}
 
+            ${renderHarvard(a)}
             ${renderMealVsPlan(a, t)}
 
             <div class="recipe-section">

@@ -1,17 +1,20 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="112" fill="#4a6b5d"/>
-  <!-- тарелка-мишень -->
-  <circle cx="226" cy="256" r="170" fill="#f7f9f6"/>
-  <circle cx="226" cy="256" r="136" fill="none" stroke="#88a795" stroke-width="10"/>
-  <circle cx="226" cy="256" r="104" fill="#88a795"/>
-  <circle cx="226" cy="256" r="74" fill="#f7f9f6"/>
-  <circle cx="226" cy="256" r="44" fill="#4a6b5d"/>
-  <circle cx="226" cy="256" r="18" fill="#f2c94c"/>
-  <!-- дротик в центре -->
-  <line x1="226" y1="256" x2="330" y2="152" stroke="#2c3e35" stroke-width="10" stroke-linecap="round"/>
-  <path d="M318 140 L352 130 L342 164 Z M330 152 L366 150 L352 130 Z" fill="#d96b6b"/>
-  <!-- столовая ложка вертикально справа, черпак с маслом сверху -->
-  <ellipse cx="448" cy="150" rx="32" ry="54" fill="#f7f9f6"/>
-  <ellipse cx="448" cy="146" rx="20" ry="36" fill="#f2c94c"/>
-  <rect x="438" y="196" width="20" height="230" rx="10" fill="#f7f9f6"/>
+  <!-- тарелка -->
+  <circle cx="226" cy="256" r="172" fill="#f7f9f6"/>
+  <circle cx="226" cy="256" r="146" fill="none" stroke="#dfe6e1" stroke-width="6"/>
+  <!-- мишень: красно-белые кольца -->
+  <circle cx="226" cy="256" r="128" fill="#e03a3a"/>
+  <circle cx="226" cy="256" r="100" fill="#ffffff"/>
+  <circle cx="226" cy="256" r="74" fill="#e03a3a"/>
+  <circle cx="226" cy="256" r="48" fill="#ffffff"/>
+  <circle cx="226" cy="256" r="24" fill="#e03a3a"/>
+  <!-- дротик в яблочке -->
+  <line x1="226" y1="256" x2="326" y2="156" stroke="#2c3e35" stroke-width="11" stroke-linecap="round"/>
+  <path d="M312 146 L346 128 L338 168 Z" fill="#2f80c4"/>
+  <path d="M316 142 L358 136 L334 160 Z" fill="#1f5f99"/>
+  <!-- столовая ложка вертикально справа, масло в черпаке -->
+  <ellipse cx="452" cy="150" rx="32" ry="54" fill="#f7f9f6"/>
+  <ellipse cx="452" cy="146" rx="20" ry="36" fill="#f2c94c"/>
+  <rect x="442" y="196" width="20" height="230" rx="10" fill="#f7f9f6"/>
 </svg>
