@@ -1,8 +1,17 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="112" fill="#4a6b5d"/>
-  <circle cx="256" cy="236" r="150" fill="#f7f9f6"/>
-  <circle cx="256" cy="236" r="104" fill="none" stroke="#88a795" stroke-width="14"/>
-  <rect x="120" y="418" width="190" height="20" rx="10" fill="#f7f9f6"/>
-  <ellipse cx="352" cy="428" rx="54" ry="30" fill="#f7f9f6"/>
-  <ellipse cx="356" cy="428" rx="34" ry="17" fill="#f2c94c"/>
+  <!-- тарелка-мишень -->
+  <circle cx="226" cy="256" r="170" fill="#f7f9f6"/>
+  <circle cx="226" cy="256" r="136" fill="none" stroke="#88a795" stroke-width="10"/>
+  <circle cx="226" cy="256" r="104" fill="#88a795"/>
+  <circle cx="226" cy="256" r="74" fill="#f7f9f6"/>
+  <circle cx="226" cy="256" r="44" fill="#4a6b5d"/>
+  <circle cx="226" cy="256" r="18" fill="#f2c94c"/>
+  <!-- дротик в центре -->
+  <line x1="226" y1="256" x2="330" y2="152" stroke="#2c3e35" stroke-width="10" stroke-linecap="round"/>
+  <path d="M318 140 L352 130 L342 164 Z M330 152 L366 150 L352 130 Z" fill="#d96b6b"/>
+  <!-- столовая ложка вертикально справа, черпак с маслом сверху -->
+  <ellipse cx="448" cy="150" rx="32" ry="54" fill="#f7f9f6"/>
+  <ellipse cx="448" cy="146" rx="20" ry="36" fill="#f2c94c"/>
+  <rect x="438" y="196" width="20" height="230" rx="10" fill="#f7f9f6"/>
 </svg>
