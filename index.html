@@ -67,41 +67,6 @@
         .recipe-section h4 { font-size: 12px; color: var(--primary); margin-bottom: 4px; }
         .recipe-section ul, .recipe-section ol { padding-left: 16px; }
         .recipe-section li { margin-bottom: 3px; }
-
-        /* ===== КАЛОРИИ / КАМЕРА ===== */
-        .seg { display: flex; gap: 6px; margin-bottom: 10px; }
-        .seg button { flex: 1; padding: 9px 6px; border-radius: 10px; border: 1px solid var(--border); background: #f0f4f1; font-size: 12px; font-weight: 600; color: var(--text-dark); cursor: pointer; }
-        .seg button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-        .profile-row { display: flex; gap: 6px; }
-        .profile-row input { margin-bottom: 10px; }
-        .cam-box { position: relative; width: 100%; aspect-ratio: 3 / 4; background: #1f2a24; border-radius: 14px; overflow: hidden; margin-bottom: 8px; }
-        .cam-box video, .cam-box img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-        .cam-box svg.overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-        .cam-hint { position: absolute; left: 0; right: 0; bottom: 10px; text-align: center; color: #cfe0d6; font-size: 11px; padding: 0 16px; }
-        .btn-row { display: flex; gap: 6px; }
-        .btn-row button { flex: 1; }
-        button.btn-secondary { width: 100%; padding: 11px; background: #edf2ee; color: var(--primary); border: 1px solid var(--border); border-radius: 10px; font-weight: 600; font-size: 12px; cursor: pointer; margin-top: 8px; }
-        .macro-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 8px 0; }
-        .macro { background: #f3f7f4; border-radius: 10px; padding: 8px 4px; text-align: center; }
-        .macro b { display: block; font-size: 15px; color: var(--primary); }
-        .macro span { font-size: 10px; color: var(--text-muted); }
-        table.items { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 4px; }
-        table.items th, table.items td { padding: 4px 3px; border-bottom: 1px solid var(--border); text-align: right; }
-        table.items th:first-child, table.items td:first-child { text-align: left; }
-        .bar { height: 6px; background: #e6ece8; border-radius: 3px; overflow: hidden; margin: 2px 0 6px; }
-        .bar i { display: block; height: 100%; background: var(--accent); }
-        .bar i.over { background: var(--danger); }
-        .bar-label { display: flex; justify-content: space-between; font-size: 11px; }
-        .spike { padding: 8px; border-radius: 8px; margin-top: 8px; }
-        .spike.low { background: #e9f6ee; border: 1px solid #b9e0c7; }
-        .spike.medium { background: #fff8eb; border: 1px solid #ffe3b3; }
-        .spike.high { background: #fdecec; border: 1px solid #f3baba; }
-        .doubt { background: #f4f1fb; border: 1px solid #ddd3f3; border-radius: 8px; padding: 8px; margin-top: 8px; }
-        .chips-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
-        .chips-row button { font-size: 11px; padding: 5px 9px; border-radius: 14px; border: 1px solid var(--border); background: #fff; cursor: pointer; }
-        .chips-row button.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-        .oil-box { background: #fffbea; border: 1px solid #f2e2a0; border-radius: 8px; padding: 8px; margin-top: 8px; }
-        .reminder-banner { background: #fff8eb; border: 1px solid #ffe3b3; color: #664d00; border-radius: 10px; padding: 8px 10px; font-size: 11px; margin-bottom: 10px; display: none; }
     </style>
 </head>
 <body>
@@ -118,13 +83,12 @@
     </div>
 
     <div class="tabs">
-        <button class="tab active" onclick="switchTab('adapter', this)">🔄 Адаптер</button>
-        <button class="tab" onclick="switchTab('curator', this)">🔍 Найти рецепт</button>
-        <button class="tab" onclick="switchTab('calories', this)">📸 Калории</button>
+        <button class="tab active" onclick="switchTab('adapter')">🔄 Адаптер</button>
+        <button class="tab" onclick="switchTab('curator')">🔍 Найти рецепт</button>
     </div>
 
     <!-- ПРАВИЛА И ИСКЛЮЧЕНИЯ -->
-    <div id="rulesPanel" style="padding: 12px 16px 0 16px; background: #fafcfa; border-bottom: 1px solid var(--border);">
+    <div style="padding: 12px 16px 0 16px; background: #fafcfa; border-bottom: 1px solid var(--border);">
         <div class="section-label" style="margin-top:0;">Базовые правила:</div>
         <div style="font-size: 11px; color: var(--primary); margin-bottom: 6px; font-weight: 600;">
             ✅ Без глютена &nbsp;•&nbsp; ✅ Без сахара &nbsp;•&nbsp; ✅ Без молочки
@@ -168,85 +132,12 @@
         <button class="btn-primary" onclick="generateRecipe()" style="margin-top: 0;">Создать чистый рецепт</button>
         <div id="searchResults"></div>
     </div>
-
-    <!-- ВКЛАДКА 3: АНАЛИЗАТОР КАЛОРИЙ -->
-    <div id="calories" class="tab-content" style="padding-top: 12px;">
-        <div id="reminderBanner" class="reminder-banner"></div>
-
-        <div class="section-label" style="margin-top:0;">Кто пользуется приложением?</div>
-        <div class="seg" id="genderSeg">
-            <button data-v="female" onclick="setProfile('gender', 'female')">👩 Женщина</button>
-            <button data-v="male" onclick="setProfile('gender', 'male')">👨 Мужчина</button>
-        </div>
-        <div class="profile-row">
-            <input type="text" inputmode="numeric" id="pAge" placeholder="Возраст" onchange="setProfile('age', this.value)">
-            <input type="text" inputmode="numeric" id="pWeight" placeholder="Вес, кг" onchange="setProfile('weight', this.value)">
-            <input type="text" inputmode="numeric" id="pHeight" placeholder="Рост, см" onchange="setProfile('height', this.value)">
-        </div>
-
-        <div class="section-label">Как сфотографировать:</div>
-        <div style="font-size:11px; line-height:1.5; margin-bottom:8px;">
-            ✋ <b>Левую руку</b> положите ровно над тарелкой, большой палец — вдоль края тарелки.<br>
-            🥄 <b>Столовую ложку</b> положите под тарелкой. Налейте в неё столько масла, сколько добавили в блюдо — приложение посчитает скрытые жиры.
-        </div>
-
-        <div class="section-label">Сфотографируйте тарелку:</div>
-        <div class="cam-box" id="camBox">
-            <video id="camVideo" playsinline muted style="display:none;"></video>
-            <img id="camPhoto" alt="" style="display:none;">
-            <div class="cam-hint" id="camHint">Рука сверху, тарелка в центре, ложка с маслом снизу — по ним определяется размер порции</div>
-            <svg class="overlay" id="camOverlay" viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice">
-                <!-- левая рука ладонью вниз, пальцы вправо, большой палец вдоль края тарелки -->
-                <g id="handShape" opacity="0.38" fill="#ffffff">
-                    <rect x="-30" y="44" width="140" height="74" rx="26"/>
-                    <rect x="90" y="47" width="78" height="14" rx="7"/>
-                    <rect x="95" y="62" width="95" height="15" rx="7.5"/>
-                    <rect x="95" y="78" width="103" height="15" rx="7.5"/>
-                    <rect x="95" y="94" width="94" height="15" rx="7.5"/>
-                    <rect x="70" y="104" width="78" height="16" rx="8" transform="rotate(4 70 112)"/>
-                </g>
-                <!-- тарелка -->
-                <circle cx="168" cy="222" r="96" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-dasharray="8 6" opacity="0.8"/>
-                <circle cx="168" cy="222" r="68" fill="none" stroke="#ffffff" stroke-width="1" stroke-dasharray="4 6" opacity="0.5"/>
-                <!-- столовая ложка под тарелкой, черпак справа -->
-                <g opacity="0.38" fill="#ffffff">
-                    <rect x="55" y="341" width="130" height="8" rx="4" transform="rotate(-3 120 345)"/>
-                    <ellipse cx="210" cy="340" rx="27" ry="14"/>
-                </g>
-                <ellipse cx="212" cy="340" rx="17" ry="8" fill="#f2c94c" opacity="0.6"/>
-                <text x="60" y="36" fill="#fff" font-size="11" text-anchor="middle" opacity="0.85">левая рука</text>
-                <text x="168" y="226" fill="#fff" font-size="11" text-anchor="middle" opacity="0.7">тарелка</text>
-                <text x="120" y="330" fill="#fff" font-size="11" text-anchor="middle" opacity="0.85">ложка + масло</text>
-            </svg>
-        </div>
-        <div class="btn-row">
-            <button class="btn-secondary" id="camBtn" onclick="toggleCamera()">📷 Открыть камеру</button>
-            <button class="btn-secondary" onclick="document.getElementById('photoFile').click()">🖼 Из галереи</button>
-        </div>
-        <input type="file" id="photoFile" accept="image/*" capture="environment" style="display:none;" onchange="loadPhotoFile(this)">
-
-        <div class="section-label">Уточнение (по желанию):</div>
-        <div class="profile-row">
-            <input type="text" id="mealNote" placeholder="Например: это гречка с курицей, соус сметанный">
-            <button class="btn-secondary" style="width:auto; margin-top:0; margin-bottom:10px; padding:0 12px;" onclick="dictateNote()" title="Надиктовать">🎤</button>
-        </div>
-        <button class="btn-primary" style="margin-top:0;" onclick="analyzePlate()">🔬 Анализировать тарелку</button>
-
-        <div id="calResult"></div>
-
-        <div class="result-card" id="dayCard">
-            <div class="result-title">📅 Сегодня</div>
-            <div id="dayBody"></div>
-            <button class="btn-secondary" onclick="clearDay()">Очистить дневник за день</button>
-        </div>
-    </div>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
         const savedKey = localStorage.getItem('gemini_api_key');
         if (savedKey) document.getElementById('apiKeyInput').value = savedKey;
-        initCalories();
     });
 
     function toggleApiPanel() {
@@ -259,14 +150,11 @@
         localStorage.setItem('gemini_api_key', key);
     }
 
-    function switchTab(tabId, btn) {
+    function switchTab(tabId) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
         document.getElementById(tabId).classList.add('active');
-        btn.classList.add('active');
-        // Исключения для рецептов не нужны в анализаторе калорий
-        document.getElementById('rulesPanel').style.display = tabId === 'calories' ? 'none' : 'block';
-        if (tabId !== 'calories') stopCamera();
+        event.currentTarget.classList.add('active');
     }
 
     function toggleChip(el) { el.classList.toggle('active'); }
@@ -281,7 +169,7 @@
         return selected;
     }
 
-    async function callGemini(promptText, extraParts = [], generationConfig = null) {
+    async function callGemini(promptText) {
         const apiKey = localStorage.getItem('gemini_api_key') || document.getElementById('apiKeyInput').value.trim();
         if (!apiKey) {
             alert('Пожалуйста, нажмите на шапку "Clean Eats Hub" вверху, чтобы ввести API-ключ!');
@@ -295,10 +183,7 @@
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: promptText }, ...extraParts] }],
-                    ...(generationConfig ? { generationConfig } : {})
-                })
+                body: JSON.stringify({ contents: [{ parts: [{ text: promptText }] }] })
             });
 
             const data = await response.json();
@@ -386,488 +271,6 @@
         if (aiResponse) {
             resultBox.innerHTML = aiResponse;
         }
-    }
-
-    // ================= АНАЛИЗАТОР КАЛОРИЙ =================
-    // Средние размеры эталонов, по которым модель оценивает масштаб тарелки
-    const HAND_SIZES = {
-        female: 'женская кисть: длина ~17–18 см (от запястья до кончика среднего пальца), ширина ладони ~7,5–8 см, кулак ~8 × 9 см',
-        male: 'мужская кисть: длина ~19–20 см (от запястья до кончика среднего пальца), ширина ладони ~8,5–9 см, кулак ~9 × 10 см'
-    };
-    const SPOON_SIZE = 'столовая ложка: длина ~18–19 см, черпак ~4,5 × 6 см, полная ложка вмещает 15 мл';
-    const SPOON_ML = 15;
-    // Масла: плотность г/мл, доля жира, ккал на 100 г
-    const OILS = {
-        sunflower: { name: 'Подсолнечное', density: 0.92, fat: 1, kcal: 899 },
-        olive:     { name: 'Оливковое',    density: 0.91, fat: 1, kcal: 898 },
-        linseed:   { name: 'Льняное',      density: 0.93, fat: 1, kcal: 898 },
-        coconut:   { name: 'Кокосовое',    density: 0.92, fat: 1, kcal: 899 },
-        ghee:      { name: 'Топлёное (гхи)', density: 0.91, fat: 0.99, kcal: 892 },
-        butter:    { name: 'Сливочное',    density: 0.91, fat: 0.82, kcal: 748 }
-    };
-    const FILLS = [[1, 'Полная'], [0.75, '¾'], [0.5, '½'], [0.33, '⅓'], [0.25, '¼'], [0, 'Нет масла']];
-    const MEAL_INTERVAL_HOURS = 4.5; // между приёмами пищи
-    const REMINDER_LEAD_MIN = 30;    // напоминание за 30 минут, т.е. через 4 часа
-
-    let profile = { gender: 'female', age: '', weight: '', height: '' };
-    let camStream = null;
-    let photoData = null; // { mime, base64 }
-    let lastAnalysis = null;
-    let reminderTimer = null;
-
-    function esc(v) {
-        return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    }
-    function num(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
-    function r0(v) { return Math.round(num(v)); }
-
-    function initCalories() {
-        try { Object.assign(profile, JSON.parse(localStorage.getItem('ce_profile') || '{}')); } catch (e) {}
-        document.getElementById('pAge').value = profile.age || '';
-        document.getElementById('pWeight').value = profile.weight || '';
-        document.getElementById('pHeight').value = profile.height || '';
-        renderProfile();
-        renderDay();
-        restoreReminder();
-    }
-
-    function setProfile(key, value) {
-        profile[key] = value;
-        localStorage.setItem('ce_profile', JSON.stringify(profile));
-        renderProfile();
-        renderDay();
-    }
-
-    function renderProfile() {
-        document.querySelectorAll('#genderSeg button').forEach(b => b.classList.toggle('active', b.dataset.v === profile.gender));
-        // Женская рука на рамке чуть меньше мужской (масштаб от запястья у левого края)
-        const s = profile.gender === 'male' ? 1 : 0.88;
-        document.getElementById('handShape').setAttribute('transform', `translate(0 ${118 * (1 - s)}) scale(${s})`);
-    }
-
-    // Суточные нормы: Миффлин–Сан Жеор при заполненном профиле, иначе средние значения
-    function getNorms() {
-        const male = profile.gender === 'male';
-        const w = num(profile.weight), h = num(profile.height), a = num(profile.age);
-        let kcal = male ? 2500 : 2000;
-        if (w && h && a) kcal = Math.round((10 * w + 6.25 * h - 5 * a + (male ? 5 : -161)) * 1.4);
-        return {
-            kcal,
-            protein: Math.round(w ? w * 1.2 : (male ? 75 : 60)),
-            fat: Math.round(kcal * 0.3 / 9),
-            carbs: Math.round(kcal * 0.5 / 4),
-            sugar: male ? 36 : 25, // добавленный сахар, рекомендация ВОЗ/AHA
-            fiber: male ? 30 : 25
-        };
-    }
-
-    // ---------- Камера ----------
-    async function toggleCamera() {
-        if (camStream) { capturePhoto(); return; }
-        if (!navigator.mediaDevices?.getUserMedia) {
-            document.getElementById('photoFile').click();
-            return;
-        }
-        try {
-            camStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 } }, audio: false });
-            const video = document.getElementById('camVideo');
-            video.srcObject = camStream;
-            await video.play();
-            video.style.display = 'block';
-            document.getElementById('camOverlay').style.display = '';
-            document.getElementById('camPhoto').style.display = 'none';
-            document.getElementById('camHint').style.display = 'none';
-            document.getElementById('camBtn').textContent = '📸 Сделать снимок';
-        } catch (err) {
-            alert('Нет доступа к камере: ' + err.message + '\nМожно выбрать фото из галереи.');
-            camStream = null;
-        }
-    }
-
-    function stopCamera() {
-        if (camStream) camStream.getTracks().forEach(t => t.stop());
-        camStream = null;
-        document.getElementById('camVideo').style.display = 'none';
-        document.getElementById('camBtn').textContent = photoData ? '🔁 Переснять' : '📷 Открыть камеру';
-    }
-
-    function capturePhoto() {
-        const video = document.getElementById('camVideo');
-        const canvas = document.createElement('canvas');
-        const scale = Math.min(1, 1280 / Math.max(video.videoWidth, video.videoHeight));
-        canvas.width = video.videoWidth * scale;
-        canvas.height = video.videoHeight * scale;
-        canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
-        setPhoto(canvas.toDataURL('image/jpeg', 0.85));
-        stopCamera();
-    }
-
-    function loadPhotoFile(input) {
-        const file = input.files[0];
-        if (!file) return;
-        const img = new Image();
-        img.onload = () => {
-            const canvas = document.createElement('canvas');
-            const scale = Math.min(1, 1280 / Math.max(img.width, img.height));
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
-            canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
-            setPhoto(canvas.toDataURL('image/jpeg', 0.85));
-            URL.revokeObjectURL(img.src);
-        };
-        img.src = URL.createObjectURL(file);
-        input.value = '';
-        stopCamera();
-    }
-
-    function setPhoto(dataUrl) {
-        const [head, base64] = dataUrl.split(',');
-        photoData = { mime: head.match(/data:(.*?);/)[1], base64 };
-        const img = document.getElementById('camPhoto');
-        img.src = dataUrl;
-        img.style.display = 'block';
-        document.getElementById('camHint').style.display = 'none';
-        document.getElementById('camOverlay').style.display = 'none'; // рамка нужна только при съёмке
-        document.getElementById('camBtn').textContent = '🔁 Переснять';
-    }
-
-    // ---------- Голос ----------
-    function dictateNote() {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) { alert('Голосовой ввод не поддерживается этим браузером'); return; }
-        const rec = new SR();
-        rec.lang = 'ru-RU';
-        rec.onresult = e => {
-            const field = document.getElementById('mealNote');
-            field.value = (field.value ? field.value + ', ' : '') + e.results[0][0].transcript;
-        };
-        rec.onerror = e => alert('Ошибка распознавания: ' + e.error);
-        rec.start();
-    }
-
-    function speakResult() {
-        if (!lastAnalysis || !window.speechSynthesis) return;
-        speechSynthesis.cancel();
-        const a = lastAnalysis, t = getTotals(a);
-        const text = `${a.dish || 'Блюдо'}. Примерно ${r0(t.kcal)} килокалорий: белки ${r0(t.protein)} грамм, жиры ${r0(t.fat)}, углеводы ${r0(t.carbs)}, сахар ${r0(t.sugar)} грамм. ` +
-            (a.summary || '') + ' ' + (a.glycemic?.tips?.length ? 'Совет: ' + a.glycemic.tips[0] : '');
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'ru-RU';
-        speechSynthesis.speak(u);
-    }
-
-    // ---------- Анализ ----------
-    async function analyzePlate() {
-        const box = document.getElementById('calResult');
-        if (!photoData) { alert('Сначала сфотографируйте тарелку или выберите фото'); return; }
-        const note = document.getElementById('mealNote').value.trim();
-        const norms = getNorms();
-        box.innerHTML = '<div class="loading-spinner">🔬 Анализируем тарелку...</div>';
-
-        const prompt = `Ты нутрициолог. На фото тарелка с едой. Рядом с тарелкой лежит левая рука пользователя (ладонью вниз, большой палец вдоль края тарелки)
-и столовая ложка — эталоны масштаба:
-- ${HAND_SIZES[profile.gender]};
-- ${SPOON_SIZE}.
-Определи диаметр тарелки по руке и ложке, затем объём и вес каждого продукта. Размер кулака пользователя помогает оценить объём гарнира.
-Если рука или ложка не видны — оцени по типичной тарелке ~26 см и снизь confidence.
-
-В ложку пользователь может налить столько масла, сколько добавлено в блюдо (в кашах и гарнирах масло не видно).
-Посмотри на черпак ложки: есть ли в нём жидкость/масло и какая часть ложки заполнена (1 — полная, 0.5 — половина, 0.33 — треть, 0 — пустая).
-НЕ включай масло из ложки в items и totals — его посчитает приложение. Если видно, что масло уже есть в самой еде (блестит, лужица), учитывай его в items как обычно.
-${note ? `Уточнение от пользователя (доверяй ему больше, чем фото): "${note}".` : ''}
-Пользователь: ${profile.gender === 'male' ? 'мужчина' : 'женщина'}${profile.age ? ', ' + profile.age + ' лет' : ''}${profile.weight ? ', ' + profile.weight + ' кг' : ''}.
-Суточные нормы пользователя: ${norms.kcal} ккал, белок ${norms.protein} г, жиры ${norms.fat} г, углеводы ${norms.carbs} г, добавленный сахар не более ${norms.sugar} г, клетчатка ${norms.fiber} г.
-
-Оцени гликемический скачок сахара в крови от этого блюда (например, бутерброд с белым хлебом — высокий) и дай конкретные советы, как его снизить
-(например: добавить жир/масло или белок, съесть сначала салат/овощи, поменять порядок еды, прогуляться 10 минут после еды).
-Если не уверен в составе (соус, начинка, вид мяса, масло) — задай короткие уточняющие вопросы в doubts.
-
-Ответь строго JSON без пояснений, все тексты на русском:
-{
- "dish": "название блюда",
- "confidence": 0-100,
- "plate_diameter_cm": число,
- "scale_note": "как определил размер порции",
- "items": [{"name": "продукт", "grams": число, "kcal": число, "protein": г, "fat": г, "carbs": г, "sugar": г, "fiber": г}],
- "totals": {"grams": число, "kcal": число, "protein": г, "fat": г, "carbs": г, "sugar": г, "fiber": г},
- "micros": [{"name": "Витамин C", "amount": число, "unit": "мг|мкг", "percent_daily": число}],
- "glycemic": {"level": "low|medium|high", "glycemic_load": число, "reason": "почему", "tips": ["совет"]},
- "missing": ["чего не хватает в этой тарелке относительно сбалансированного приёма пищи"],
- "doubts": ["уточняющий вопрос"],
- "spoon": {"visible": true/false, "has_liquid": true/false, "fill_fraction": 0-1, "oil_guess": "sunflower|olive|linseed|coconut|ghee|butter|unknown", "note": "что видно в ложке"},
- "summary": "2–3 предложения итога для озвучки"
-}`;
-
-        const raw = await callGemini(prompt, [{ inline_data: { mime_type: photoData.mime, data: photoData.base64 } }], { responseMimeType: 'application/json', temperature: 0.2 });
-        if (!raw) { box.innerHTML = ''; return; }
-        try {
-            lastAnalysis = JSON.parse(raw.replace(/^```(json)?|```$/gm, '').trim());
-        } catch (e) {
-            box.innerHTML = '<div class="result-card">Не удалось разобрать ответ. Попробуйте ещё раз.</div>';
-            return;
-        }
-        const sp = lastAnalysis.spoon || {};
-        lastAnalysis.oil = {
-            fill: sp.has_liquid ? Math.min(1, Math.max(0, num(sp.fill_fraction))) : 0,
-            type: OILS[sp.oil_guess] ? sp.oil_guess : null, // вид масла лучше уточнить у пользователя
-            detected: !!sp.has_liquid,
-            note: sp.note || ''
-        };
-        renderAnalysis(lastAnalysis);
-    }
-
-    function oilNutrition(oil) {
-        if (!oil || !oil.fill) return null;
-        const o = OILS[oil.type || 'sunflower'];
-        const grams = SPOON_ML * oil.fill * o.density;
-        return { grams, fat: grams * o.fat, kcal: grams * o.kcal / 100, name: o.name };
-    }
-
-    // Итоги тарелки + масло из ложки
-    function getTotals(a) {
-        const t = { ...(a.totals || {}) };
-        const oil = oilNutrition(a.oil);
-        if (oil) {
-            t.grams = num(t.grams) + oil.grams;
-            t.fat = num(t.fat) + oil.fat;
-            t.kcal = num(t.kcal) + oil.kcal;
-        }
-        return t;
-    }
-
-    function setOil(key, value) {
-        if (!lastAnalysis) return;
-        lastAnalysis.oil[key] = value;
-        if (key === 'fill') lastAnalysis.oil.note = ''; // подсказка модели больше не актуальна
-        renderAnalysis(lastAnalysis);
-    }
-
-    function renderOil(a) {
-        const oil = a.oil || {};
-        const n = oilNutrition(oil);
-        const fills = FILLS.map(([v, label]) =>
-            `<button class="${Math.abs(oil.fill - v) < 0.05 ? 'active' : ''}" onclick="setOil('fill', ${v})">${label}</button>`).join('');
-        const types = Object.entries(OILS).map(([k, o]) =>
-            `<button class="${oil.type === k ? 'active' : ''}" onclick="setOil('type', '${k}')">${o.name}</button>`).join('');
-        const head = oil.detected
-            ? `🥄 В ложке масло: ${FILLS.find(([v]) => Math.abs(oil.fill - v) < 0.05)?.[1] || Math.round(oil.fill * 100) + '%'} ложки`
-            : '🥄 Масла в ложке не видно';
-        return `<div class="oil-box">
-            <h4 style="font-size:12px;">${head}</h4>
-            ${oil.note ? `<p style="font-size:10px; color:var(--text-muted);">${esc(oil.note)}</p>` : ''}
-            ${n ? `<p style="font-size:11px; margin-top:4px;">+ <b>${n.grams.toFixed(1)} г</b> масла = <b>${n.fat.toFixed(1)} г жиров</b>, ${r0(n.kcal)} ккал (уже добавлено в итог)</p>` : ''}
-            <div style="font-size:10px; margin-top:6px;">Сколько масла в ложке? Поправьте, если не так:</div>
-            <div class="chips-row">${fills}</div>
-            ${oil.fill ? `<div style="font-size:10px; margin-top:6px;">${oil.type ? 'Какое масло:' : '❓ Какое это масло? (по желанию, иначе считаем как подсолнечное)'}</div>
-            <div class="chips-row">${types}</div>` : ''}
-        </div>`;
-    }
-
-    function renderAnalysis(a) {
-        const t = getTotals(a);
-        const norms = getNorms();
-        const level = ['low', 'medium', 'high'].includes(a.glycemic?.level) ? a.glycemic.level : 'medium';
-        const levelText = { low: '🟢 Низкий', medium: '🟡 Средний', high: '🔴 Высокий' }[level];
-        const list = arr => (arr || []).map(x => `<li>${esc(x)}</li>`).join('');
-
-        const items = (a.items || []).map(i => `<tr><td>${esc(i.name)}</td><td>${r0(i.grams)}</td><td>${r0(i.kcal)}</td><td>${r0(i.protein)}</td><td>${r0(i.fat)}</td><td>${r0(i.carbs)}</td></tr>`).join('');
-        const micros = (a.micros || []).map(m => `<li>${esc(m.name)}: ${esc(m.amount)} ${esc(m.unit)}${m.percent_daily ? ` <span style="color:var(--text-muted)">(${r0(m.percent_daily)}% нормы)</span>` : ''}</li>`).join('');
-
-        const sugar = num(t.sugar);
-        const sugarPct = Math.round(sugar / norms.sugar * 100);
-
-        document.getElementById('calResult').innerHTML = `
-        <div class="result-card">
-            <span class="badge">Уверенность ${r0(a.confidence)}%</span>
-            <div class="result-title">🍽 ${esc(a.dish)}</div>
-            <div style="font-size:11px; color:var(--text-muted);">≈ ${r0(t.grams)} г · тарелка ~${r0(a.plate_diameter_cm)} см. ${esc(a.scale_note)}</div>
-            <div class="macro-grid">
-                <div class="macro"><b>${r0(t.kcal)}</b><span>ккал</span></div>
-                <div class="macro"><b>${r0(t.protein)}</b><span>белки, г</span></div>
-                <div class="macro"><b>${r0(t.fat)}</b><span>жиры, г</span></div>
-                <div class="macro"><b>${r0(t.carbs)}</b><span>углев., г</span></div>
-            </div>
-            <table class="items">
-                <tr><th>Продукт</th><th>г</th><th>ккал</th><th>Б</th><th>Ж</th><th>У</th></tr>
-                ${items}
-            </table>
-            ${renderOil(a)}
-
-            <div class="recipe-section">
-                <h4>🍬 Сахар: ${sugar.toFixed(1)} г из ${norms.sugar} г в день (${sugarPct}%)</h4>
-                <div class="bar"><i class="${sugarPct > 100 ? 'over' : ''}" style="width:${Math.min(sugarPct, 100)}%"></i></div>
-            </div>
-
-            <div class="spike ${level}">
-                <h4 style="font-size:12px;">📈 Скачок сахара: ${levelText}${a.glycemic?.glycemic_load ? ` (ГН ≈ ${r0(a.glycemic.glycemic_load)})` : ''}</h4>
-                <p style="font-size:11px;">${esc(a.glycemic?.reason)}</p>
-                ${a.glycemic?.tips?.length ? `<ul style="font-size:11px; padding-left:16px; margin-top:4px;">${list(a.glycemic.tips)}</ul>` : ''}
-            </div>
-
-            ${micros ? `<div class="recipe-section"><h4>💊 Витамины и минералы:</h4><ul>${micros}</ul></div>` : ''}
-            ${a.missing?.length ? `<div class="recipe-section"><h4>⚖️ Чего не хватает:</h4><ul>${list(a.missing)}</ul></div>` : ''}
-            ${a.doubts?.length ? `<div class="doubt"><h4 style="font-size:12px;">❓ Есть сомнения — уточните по желанию:</h4><ul style="font-size:11px; padding-left:16px;">${list(a.doubts)}</ul>
-                <p style="font-size:10px; color:var(--text-muted); margin-top:4px;">Напишите ответ в поле «Уточнение» выше и нажмите «Анализировать» ещё раз.</p></div>` : ''}
-            ${a.summary ? `<p style="margin-top:8px;">${esc(a.summary)}</p>` : ''}
-
-            <div class="btn-row">
-                <button class="btn-secondary" onclick="speakResult()">🔊 Озвучить</button>
-                <button class="btn-secondary" onclick="addToDay()">➕ В дневник</button>
-            </div>
-            <button class="btn-secondary" onclick="setReminder()">⏰ Напомнить о следующем приёме пищи</button>
-            <p style="font-size:10px; color:var(--text-muted); margin-top:6px;">Следующий приём пищи — через 4,5 часа (белок + клетчатка), напоминание придёт за 30 минут. Оценка по фото приблизительная.</p>
-        </div>`;
-    }
-
-    // ---------- Дневник за день ----------
-    function todayKey() { return 'ce_day_' + new Date().toISOString().slice(0, 10); }
-    function getDay() { try { return JSON.parse(localStorage.getItem(todayKey()) || '[]'); } catch (e) { return []; } }
-
-    function addToDay() {
-        if (!lastAnalysis) return;
-        const day = getDay();
-        day.push({ time: new Date().toTimeString().slice(0, 5), dish: lastAnalysis.dish, totals: getTotals(lastAnalysis) });
-        localStorage.setItem(todayKey(), JSON.stringify(day));
-        renderDay();
-        // После приёма пищи сразу предлагаем напоминание о следующем
-        setReminder();
-    }
-
-    function clearDay() {
-        if (!confirm('Очистить дневник за сегодня?')) return;
-        localStorage.removeItem(todayKey());
-        renderDay();
-    }
-
-    function renderDay() {
-        const day = getDay();
-        const norms = getNorms();
-        const sum = { kcal: 0, protein: 0, fat: 0, carbs: 0, sugar: 0, fiber: 0 };
-        day.forEach(m => Object.keys(sum).forEach(k => sum[k] += num(m.totals[k])));
-        const rows = [
-            ['kcal', 'Калории', 'ккал'], ['protein', 'Белки', 'г'], ['fat', 'Жиры', 'г'],
-            ['carbs', 'Углеводы', 'г'], ['sugar', 'Сахар (макс.)', 'г'], ['fiber', 'Клетчатка', 'г']
-        ];
-        const bars = rows.map(([k, label, unit]) => {
-            const pct = Math.round(sum[k] / norms[k] * 100);
-            const over = k === 'sugar' ? pct > 100 : pct > 115;
-            return `<div class="bar-label"><span>${label}</span><span>${r0(sum[k])} / ${norms[k]} ${unit}</span></div>
-                    <div class="bar"><i class="${over ? 'over' : ''}" style="width:${Math.min(pct, 100)}%"></i></div>`;
-        }).join('');
-
-        const left = [];
-        if (day.length) {
-            if (sum.protein < norms.protein) left.push(`белка ещё ~${r0(norms.protein - sum.protein)} г`);
-            if (sum.fat < norms.fat) left.push(`жиров ~${r0(norms.fat - sum.fat)} г`);
-            if (sum.fiber < norms.fiber) left.push(`клетчатки ~${r0(norms.fiber - sum.fiber)} г (овощи, зелень, бобовые)`);
-        }
-        const meals = day.map(m => `<li>${esc(m.time)} — ${esc(m.dish)} (${r0(m.totals.kcal)} ккал)</li>`).join('');
-
-        document.getElementById('dayBody').innerHTML = `
-            <div style="font-size:10px; color:var(--text-muted); margin-bottom:6px;">Нормы для: ${profile.gender === 'male' ? 'мужчины' : 'женщины'}${profile.weight ? ', ' + esc(profile.weight) + ' кг' : ''}</div>
-            ${bars}
-            ${meals ? `<div class="recipe-section"><h4>🍽 Приёмы пищи:</h4><ul>${meals}</ul></div>` : '<p style="font-size:11px; color:var(--text-muted);">Пока ничего не добавлено.</p>'}
-            ${sum.sugar > norms.sugar ? `<p style="color:var(--danger); font-size:11px; margin-top:6px;">⚠️ Норма сахара на сегодня превышена.</p>` : ''}
-            ${left.length ? `<p style="font-size:11px; margin-top:6px;">Чтобы закрыть норму, не хватает: ${left.join(', ')}.</p>` : ''}`;
-    }
-
-    // ---------- Напоминание ----------
-    // Страница не может работать, когда она закрыта, поэтому основное напоминание
-    // ставится в календарь телефона — он уведомит даже при закрытом браузере.
-    // Таймер внутри страницы — дополнительный, на случай если приложение открыто.
-    const REMINDER_TEXT = 'Через 30 минут — следующий приём пищи. Сахар будет стабильным: белок + овощи или горсть ягод.';
-
-    if ('serviceWorker' in navigator && location.protocol === 'https:') {
-        navigator.serviceWorker.register('sw.js').catch(() => {});
-    }
-
-    // at — время самого напоминания (за 30 мин до еды), meal = at + 30 мин
-    async function setReminder() {
-        const at = Date.now() + MEAL_INTERVAL_HOURS * 3600 * 1000 - REMINDER_LEAD_MIN * 60 * 1000;
-        localStorage.setItem('ce_reminder', String(at));
-        if ('Notification' in window && Notification.permission === 'default') {
-            try { await Notification.requestPermission(); } catch (e) {}
-        }
-        scheduleReminder(at);
-    }
-
-    function scheduleReminder(at) {
-        clearTimeout(reminderTimer);
-        const banner = document.getElementById('reminderBanner');
-        const meal = at + REMINDER_LEAD_MIN * 60 * 1000;
-        const hhmm = ms => new Date(ms).toTimeString().slice(0, 5);
-        banner.style.display = 'block';
-        banner.innerHTML = `⏰ Следующий приём пищи в <b>${hhmm(meal)}</b> (через ${String(MEAL_INTERVAL_HOURS).replace('.', ',')} ч), напоминание — в <b>${hhmm(at)}</b>.
-            <div style="margin-top:4px;">Чтобы напоминание пришло, даже если приложение закрыто, добавьте его в календарь телефона:</div>
-            <div class="btn-row">
-                <button class="btn-secondary" style="margin-top:6px;" onclick="downloadIcs(${at})">📅 Календарь телефона</button>
-                <button class="btn-secondary" style="margin-top:6px;" onclick="openGoogleCalendar(${at})">Google Календарь</button>
-            </div>`;
-        reminderTimer = setTimeout(fireReminder, Math.max(0, at - Date.now()));
-    }
-
-    function calStamp(ms) {
-        return new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
-    }
-
-    // .ics со встроенным будильником (VALARM): iPhone и Android открывают его в календаре
-    function downloadIcs(at) {
-        const meal = at + REMINDER_LEAD_MIN * 60 * 1000;
-        const ics = [
-            'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Clean Eats Hub//RU', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
-            'BEGIN:VEVENT',
-            `UID:${at}@clean-eats-hub`,
-            `DTSTAMP:${calStamp(Date.now())}`,
-            `DTSTART:${calStamp(meal)}`,
-            `DTEND:${calStamp(meal + 30 * 60 * 1000)}`,
-            'SUMMARY:🍏 Приём пищи',
-            `DESCRIPTION:${REMINDER_TEXT}`,
-            'BEGIN:VALARM', 'ACTION:DISPLAY', `TRIGGER:-PT${REMINDER_LEAD_MIN}M`, 'DESCRIPTION:Через 30 минут приём пищи', 'END:VALARM',
-            'END:VEVENT', 'END:VCALENDAR'
-        ].join('\r\n');
-        const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = 'priem-pishchi.ics';
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        setTimeout(() => URL.revokeObjectURL(link.href), 10000);
-    }
-
-    function openGoogleCalendar(at) {
-        const meal = at + REMINDER_LEAD_MIN * 60 * 1000;
-        const params = new URLSearchParams({
-            action: 'TEMPLATE',
-            text: '🍏 Приём пищи',
-            dates: `${calStamp(meal)}/${calStamp(meal + 30 * 60 * 1000)}`,
-            details: REMINDER_TEXT
-        });
-        window.open('https://calendar.google.com/calendar/render?' + params, '_blank');
-    }
-
-    async function fireReminder() {
-        localStorage.removeItem('ce_reminder');
-        document.getElementById('reminderBanner').textContent = '🍏 ' + REMINDER_TEXT;
-        if (!('Notification' in window) || Notification.permission !== 'granted') {
-            alert(REMINDER_TEXT);
-            return;
-        }
-        // На Android new Notification() запрещён — показываем через service worker
-        try {
-            const reg = await navigator.serviceWorker?.getRegistration();
-            if (reg) { reg.showNotification('Clean Eats Hub', { body: REMINDER_TEXT }); return; }
-            new Notification('Clean Eats Hub', { body: REMINDER_TEXT });
-        } catch (e) {
-            alert(REMINDER_TEXT);
-        }
-    }
-
-    function restoreReminder() {
-        const at = num(localStorage.getItem('ce_reminder'));
-        if (!at) return;
-        if (at > Date.now()) scheduleReminder(at);
-        else fireReminder();
     }
 </script>
 
