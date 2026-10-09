@@ -259,6 +259,11 @@
             <div id="dayBody"></div>
             <button class="btn-secondary" onclick="clearDay()">Очистить дневник за день</button>
         </div>
+
+        <p style="font-size:10px; color:var(--text-muted); text-align:center; margin-top:14px; line-height:1.5;">
+            Приложение бесплатное. Оценки приблизительные и не заменяют консультацию врача.<br>
+            <a href="privacy.html" style="color:var(--primary);">Конфиденциальность и условия</a>
+        </p>
     </div>
 </div>
 
@@ -439,7 +444,8 @@
     // Вход: OAuth2 «client-side flow» (токен приходит в #access_token) или готовый личный токен
     const OURA_API = 'https://api.ouraring.com/v2/usercollection/';
 
-    function appUrl() { return location.origin + location.pathname; }
+    // Один и тот же адрес и для /calories/, и для /calories/index.html — Oura требует точного совпадения Redirect URI
+    function appUrl() { return location.origin + location.pathname.replace(/index\.html$/, ''); }
     function ouraToken() {
         const exp = num(localStorage.getItem('oura_token_exp'));
         if (exp && exp < Date.now()) { localStorage.removeItem('oura_token'); return ''; }
