@@ -19,7 +19,7 @@
         $('status').classList.toggle('ok', !!ok);
     };
 
-    const OFFLINE_FILES = ['rus.traineddata', 'eng.traineddata', 'tesseract-core-lstm', 'tesseract-core-simd-lstm', 'worker.min.js', 'app.js'];
+    const OFFLINE_FILES = ['rus.traineddata', 'ukr.traineddata', 'eng.traineddata', 'tesseract-core-lstm', 'tesseract-core-simd-lstm', 'worker.min.js', 'app.js'];
     async function isFullyCached() {
         try {
             const urls = [];
@@ -33,7 +33,7 @@
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(() => setStatus('Офлайн-режим недоступен в этом браузере'));
-        setStatus('Сохраняю файлы для работы без интернета (~14 МБ)…');
+        setStatus('Сохраняю файлы для работы без интернета (~16 МБ)…');
         (async function poll() {
             if (await isFullyCached()) setStatus('✅ Готово к работе без интернета', true);
             else setTimeout(poll, 1500);
@@ -467,6 +467,10 @@
         $('progress').style.display = 'none';
         $('progressText').textContent = '';
     }
+
+    // remember the chosen language
+    try { const saved = localStorage.getItem('ocr-lang'); if (saved && $('lang').querySelector(`option[value="${saved}"]`)) $('lang').value = saved; } catch { /* ignore */ }
+    $('lang').addEventListener('change', () => { try { localStorage.setItem('ocr-lang', $('lang').value); } catch { /* ignore */ } });
 
     $('copyBtn').addEventListener('click', () => copyText($('result').value, $('result')));
     $('clearBtn').addEventListener('click', resetScan);
