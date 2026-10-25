@@ -366,8 +366,13 @@
             acc = 0;
             while (hi > 0 && (acc += hist[hi]) < total * 0.01) hi--;
             const range = Math.max(1, hi - lo);
+            // light text on a dark background (dark-mode screenshots): invert to dark-on-light
+            let sum = 0;
+            for (let g = 0; g < 256; g++) sum += hist[g] * g;
+            const invert = ((sum / total - lo) * 255) / range < 110;
             for (let i = 0; i < px.length; i += 4) {
-                const v = Math.max(0, Math.min(255, ((px[i] - lo) * 255) / range));
+                let v = Math.max(0, Math.min(255, ((px[i] - lo) * 255) / range));
+                if (invert) v = 255 - v;
                 px[i] = px[i + 1] = px[i + 2] = v;
             }
             ctx.putImageData(data, 0, 0);
@@ -422,6 +427,27 @@
         return worker;
     }
 
+    // Build text from recognized lines, dropping what the engine was unsure about:
+    // icons, buttons and frames come out as low-confidence junk like "] Г adh" or "| ©]".
+    function cleanText(data) {
+        const blocks = [];
+        for (const block of data.blocks || []) {
+            const paras = [];
+            for (const para of block.paragraphs) {
+                const lines = [];
+                for (const line of para.lines) {
+                    if (line.confidence < 55) continue;
+                    const words = line.words.filter((w) => w.confidence >= 60 && (/[\p{L}\p{N}]/u.test(w.text) || /^[—–\-…:;,.!?«»„“"'()]+$/.test(w.text)));
+                    if (!words.some((w) => (w.text.match(/[\p{L}\p{N}]/gu) || []).length >= 2)) continue;
+                    lines.push(words.map((w) => w.text).join(' '));
+                }
+                if (lines.length) paras.push(lines.join('\n'));
+            }
+            if (paras.length) blocks.push(paras.join('\n\n'));
+        }
+        return blocks.join('\n\n');
+    }
+
     function joinLines(text) {
         return text
             .split(/\n{2,}/)
@@ -443,8 +469,9 @@
             for (let i = 0; i < images.length; i++) {
                 currentPage.index = i;
                 const canvas = await prepare(images[i], $('optEnhance').checked);
-                const { data } = await w.recognize(canvas);
-                let text = data.text.trim();
+                const clean = $('optClean').checked;
+                const { data } = await w.recognize(canvas, {}, { text: true, blocks: clean });
+                let text = (clean ? cleanText(data) : data.text).trim();
                 if ($('optJoin').checked) text = joinLines(text);
                 parts.push(text);
             }
