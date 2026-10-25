@@ -18,7 +18,7 @@
             --card: #ffffff;
             --primary: #4a6b5d;
             --accent: #88a795;
-            --danger: #d96b6b;
+            --danger: #c25555;
             --text: #2c3e35;
             --muted: #708078;
             --border: #e2e8e4;
@@ -45,9 +45,14 @@
         .header p { font-size: 12px; opacity: 0.85; margin-top: 3px; }
         .status { font-size: 11px; padding: 6px 16px; background: var(--soft); color: var(--muted); text-align: center; border-bottom: 1px solid var(--border); }
         .status.ok { color: var(--primary); font-weight: 600; }
-        .body { padding: 16px; }
+        .tabs { display: flex; background: var(--soft); border-bottom: 1px solid var(--border); }
+        .tab { flex: 1; padding: 13px 8px; font-size: 14px; font-weight: 600; color: var(--muted); background: none; border: none; border-radius: 0; border-bottom: 2px solid transparent; }
+        .tab.active { background: var(--card); color: var(--primary); border-bottom-color: var(--primary); }
+        .tab .count { font-size: 11px; background: var(--accent); color: #fff; border-radius: 10px; padding: 1px 7px; margin-left: 4px; }
+        .view { padding: 16px; display: none; }
+        .view.active { display: block; }
         .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin: 14px 0 6px; }
-        .label:first-child { margin-top: 0; }
+        .view > .label:first-child, .target + .label { margin-top: 0; }
         .row { display: flex; gap: 8px; }
         .row > * { flex: 1; }
         button, .btn {
@@ -58,18 +63,22 @@
         }
         button:active, .btn:active { transform: scale(0.98); }
         button.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+        button.danger { color: var(--danger); }
         button:disabled { opacity: 0.5; cursor: default; }
+        button.wide { width: 100%; margin-top: 12px; }
         input[type="file"] { display: none; }
-        select { width: 100%; padding: 11px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 14px; }
+        select, input[type="search"] { width: 100%; padding: 11px 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); color: var(--text); font-size: 14px; }
         .opts { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 13px; margin-top: 10px; }
         .opts label { display: flex; align-items: center; gap: 6px; }
-        .drop { border: 2px dashed var(--border); border-radius: 14px; padding: 14px; text-align: center; color: var(--muted); font-size: 13px; margin-top: 10px; }
+        .drop { border: 2px dashed var(--border); border-radius: 14px; padding: 12px; text-align: center; color: var(--muted); font-size: 13px; margin-top: 10px; }
         .drop.over { border-color: var(--primary); color: var(--primary); }
         .thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
         .thumb { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); aspect-ratio: 1; background: var(--soft); }
         .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .thumb .tools { position: absolute; inset: auto 0 0 0; display: flex; justify-content: space-between; padding: 4px; background: linear-gradient(transparent, rgba(0,0,0,0.55)); }
-        .thumb .tools button { padding: 4px 8px; font-size: 13px; border-radius: 8px; background: rgba(255,255,255,0.9); color: #222; border: none; }
+        .thumb .num { position: absolute; top: 4px; left: 4px; background: var(--primary); color: #fff; font-size: 12px; font-weight: 700; border-radius: 10px; min-width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; padding: 0 6px; }
+        .thumb .tools { position: absolute; inset: auto 0 0 0; display: flex; justify-content: space-between; gap: 2px; padding: 4px; background: linear-gradient(transparent, rgba(0,0,0,0.55)); }
+        .thumb .tools button { padding: 4px 0; flex: 1; font-size: 13px; border-radius: 7px; background: rgba(255,255,255,0.92); color: #222; border: none; }
+        .thumbs-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
         .progress { height: 8px; background: var(--soft); border-radius: 6px; overflow: hidden; margin-top: 12px; display: none; }
         .progress > div { height: 100%; width: 0; background: var(--primary); transition: width 0.2s; }
         .progress-text { font-size: 12px; color: var(--muted); margin-top: 6px; min-height: 16px; }
@@ -77,9 +86,23 @@
         .actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 8px; }
         .hint { font-size: 12px; color: var(--muted); line-height: 1.5; margin-top: 14px; padding: 10px 12px; background: var(--soft); border-radius: 12px; }
         .hint b { color: var(--text); }
-        .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text); color: var(--card); padding: 10px 16px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.2s; pointer-events: none; }
+        .target { display: none; align-items: center; gap: 8px; font-size: 13px; padding: 10px 12px; margin-bottom: 14px; border-radius: 12px; background: var(--soft); border: 1px solid var(--accent); }
+        .target.show { display: flex; }
+        .target span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .target button { padding: 6px 10px; font-size: 12px; }
+        .notes { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+        .note { text-align: left; display: block; width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--card); font-weight: 400; }
+        .note .title { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .note .preview { font-size: 13px; color: var(--muted); margin-top: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .note .date { font-size: 11px; color: var(--muted); margin-top: 6px; }
+        .empty { text-align: center; color: var(--muted); font-size: 14px; padding: 30px 10px; line-height: 1.5; }
+        .editor-top { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+        .editor-top button { padding: 9px 12px; }
+        .editor-top .saved { flex: 1; text-align: right; font-size: 12px; color: var(--muted); }
+        #noteText { min-height: 340px; }
+        .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text); color: var(--card); padding: 10px 16px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 5; }
         .toast.show { opacity: 1; }
-        #installBtn { display: none; margin-top: 10px; width: 100%; }
+        #installBtn { display: none; }
     </style>
 </head>
 <body>
@@ -89,9 +112,19 @@
         <p>Распознавание текста с картинок — работает без интернета</p>
     </div>
     <div class="status" id="status">Проверка офлайн-режима…</div>
+    <div class="tabs">
+        <button class="tab active" data-view="scan">🔍 Распознать</button>
+        <button class="tab" data-view="notes">📒 Блокнот <span class="count" id="notesCount">0</span></button>
+    </div>
 
-    <div class="body">
-        <div class="label">1. Картинка</div>
+    <!-- ===== Распознавание ===== -->
+    <div class="view active" id="view-scan">
+        <div class="target" id="target">
+            <span>➕ Добавляю в заметку: <b id="targetTitle"></b></span>
+            <button id="targetCancel">Отменить</button>
+        </div>
+
+        <div class="label">1. Картинки</div>
         <div class="row">
             <label class="btn" for="cameraInput">📸 Камера</label>
             <label class="btn" for="fileInput">🖼️ Галерея</label>
@@ -100,6 +133,7 @@
         <input type="file" id="fileInput" accept="image/*" multiple>
         <div class="drop" id="drop">или перетащите / вставьте картинку сюда</div>
         <div class="thumbs" id="thumbs"></div>
+        <div class="thumbs-hint" id="thumbsHint"></div>
 
         <div class="label">2. Язык текста</div>
         <select id="lang">
@@ -110,26 +144,55 @@
         <div class="opts">
             <label><input type="checkbox" id="optEnhance" checked> Улучшить контраст</label>
             <label><input type="checkbox" id="optJoin"> Склеить строки в абзацы</label>
+            <label><input type="checkbox" id="optSeparator"> Линия между картинками</label>
         </div>
 
-        <button class="primary" id="runBtn" style="width:100%; margin-top:14px;" disabled>🔍 Распознать текст</button>
+        <button class="primary wide" id="runBtn" disabled>🔍 Распознать текст</button>
         <div class="progress" id="progress"><div></div></div>
         <div class="progress-text" id="progressText"></div>
 
         <div class="label">3. Результат</div>
-        <textarea id="result" placeholder="Здесь появится распознанный текст. Его можно редактировать."></textarea>
+        <textarea id="result" placeholder="Здесь появится текст со всех картинок, собранный в один. Его можно редактировать."></textarea>
+        <button class="primary wide" id="toNoteBtn">📒 Сохранить в блокнот</button>
         <div class="actions">
             <button id="copyBtn">📋 Копировать</button>
-            <button id="shareBtn">📤 Поделиться</button>
-            <button id="saveBtn">💾 Сохранить .txt</button>
             <button id="clearBtn">🗑️ Очистить</button>
         </div>
 
-        <button id="installBtn">⬇️ Установить на телефон</button>
+        <button class="wide" id="installBtn">⬇️ Установить на телефон</button>
+        <div class="hint">
+            <b>Как собрать текст с нескольких картинок:</b> добавьте все фото (можно по одному с камеры), расставьте порядок стрелками ◀ ▶ и нажмите «Распознать». Текст со всех картинок соберётся в одно поле, и его можно сохранить одной заметкой.
+            Позже можно открыть заметку в блокноте и нажать «Добавить текст с фото», чтобы дописать продолжение.
+        </div>
         <div class="hint">
             <b>Как поставить на телефон:</b> один раз откройте эту страницу с интернетом и дождитесь надписи «Готово к работе без интернета».
-            Затем: <b>Android (Chrome)</b> — меню ⋮ → «Добавить на главный экран» / «Установить приложение»;
-            <b>iPhone (Safari)</b> — «Поделиться» → «На экран „Домой“». После этого приложение открывается с иконки и работает в режиме полёта.
+            Затем: <b>Android (Chrome)</b> — меню ⋮ → «Установить приложение»;
+            <b>iPhone (Safari)</b> — «Поделиться» → «На экран „Домой“». Заметки хранятся только на этом телефоне.
+        </div>
+    </div>
+
+    <!-- ===== Блокнот: список ===== -->
+    <div class="view" id="view-notes">
+        <div class="row">
+            <input type="search" id="search" placeholder="Поиск по заметкам">
+        </div>
+        <button class="primary wide" id="newNoteBtn">✏️ Новая заметка</button>
+        <div class="notes" id="notesList"></div>
+    </div>
+
+    <!-- ===== Блокнот: заметка ===== -->
+    <div class="view" id="view-note">
+        <div class="editor-top">
+            <button id="backBtn">← Назад</button>
+            <div class="saved" id="savedState"></div>
+        </div>
+        <textarea id="noteText" placeholder="Текст заметки. Первая строка — заголовок."></textarea>
+        <button class="primary wide" id="addFromPhotoBtn">📷 Добавить текст с фото</button>
+        <div class="actions">
+            <button id="noteCopyBtn">📋 Копировать</button>
+            <button id="noteShareBtn">📤 Поделиться</button>
+            <button id="noteSaveBtn">💾 Сохранить .txt</button>
+            <button id="noteDeleteBtn" class="danger">🗑️ Удалить</button>
         </div>
     </div>
 </div>
