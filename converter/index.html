@@ -41,7 +41,8 @@
         body { background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 12px; min-height: 100vh; }
         .app { width: 100%; max-width: 480px; background: var(--card); border-radius: 20px; border: 1px solid var(--border); overflow: hidden; overflow: clip; box-shadow: 0 8px 24px rgba(0,0,0,0.06); align-self: flex-start; }
         .header { background: var(--primary); color: #fff; padding: 18px 16px; text-align: center; }
-        .header h1 { font-size: 19px; font-weight: 600; }
+        .header h1 { font-size: 19px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .header .logo { width: 40px; height: 40px; border-radius: 10px; box-shadow: 0 0 0 2px rgba(255,255,255,0.35); }
         .header p { font-size: 12px; opacity: 0.85; margin-top: 3px; }
         .status { font-size: 11px; padding: 6px 16px; background: var(--soft); color: var(--muted); text-align: center; border-bottom: 1px solid var(--border); }
         .status.ok { color: var(--primary); font-weight: 600; }
@@ -117,7 +118,7 @@
 <body>
 <div class="app">
     <div class="header">
-        <h1>📷 Фото в текст</h1>
+        <h1><img class="logo" src="icons/icon.svg" alt="">Фото в текст</h1>
         <p>Распознавание текста с картинок — работает без интернета</p>
     </div>
     <div class="status" id="status">Проверка офлайн-режима…</div>
