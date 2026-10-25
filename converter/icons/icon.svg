@@ -1,12 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" fill="#4a6b5d"/>
-  <rect x="116" y="96" width="280" height="320" rx="28" fill="#ffffff"/>
-  <g fill="#4a6b5d">
-    <rect x="156" y="150" width="200" height="22" rx="11"/>
-    <rect x="156" y="198" width="160" height="22" rx="11"/>
-    <rect x="156" y="246" width="200" height="22" rx="11"/>
-    <rect x="156" y="294" width="120" height="22" rx="11"/>
+  <g transform="translate(256 262) scale(0.86) translate(-256 -255)">
+    <rect x="132" y="70" width="248" height="250" rx="16" fill="#ffffff"/>
+    <g fill="#4a6b5d">
+      <rect x="166" y="110" width="180" height="20" rx="10"/>
+      <rect x="166" y="150" width="140" height="20" rx="10"/>
+      <rect x="166" y="190" width="180" height="20" rx="10"/>
+      <rect x="166" y="230" width="110" height="20" rx="10"/>
+    </g>
+    <path d="M86 230 L256 340 L426 230 V420 a20 20 0 0 1 -20 20 H106 a20 20 0 0 1 -20 -20 Z" fill="#88a795"/>
+    <path d="M86 420 L216 318 M426 420 L296 318" stroke="#4a6b5d" stroke-width="10" stroke-linecap="round" opacity="0.35"/>
+    <path d="M86 230 L256 340 L426 230" fill="none" stroke="#ffffff" stroke-width="12" stroke-linejoin="round"/>
   </g>
-  <circle cx="360" cy="370" r="62" fill="#88a795" stroke="#ffffff" stroke-width="14"/>
-  <text x="360" y="394" font-family="Arial, sans-serif" font-size="68" font-weight="700" fill="#ffffff" text-anchor="middle">T</text>
 </svg>
