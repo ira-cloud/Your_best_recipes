@@ -19,12 +19,15 @@
         $('status').classList.toggle('ok', !!ok);
     };
 
-    const CACHE_NAME = 'ocr-converter-v1';
+    const OFFLINE_FILES = ['rus.traineddata', 'eng.traineddata', 'tesseract-core-lstm', 'tesseract-core-simd-lstm', 'worker.min.js', 'app.js'];
     async function isFullyCached() {
         try {
-            const keys = await (await caches.open(CACHE_NAME)).keys();
-            return ['rus.traineddata', 'eng.traineddata', 'tesseract-core-lstm', 'tesseract-core-simd-lstm', 'worker.min.js']
-                .every((name) => keys.some((r) => r.url.includes(name)));
+            const urls = [];
+            for (const name of await caches.keys()) {
+                if (!name.startsWith('ocr-')) continue;
+                urls.push(...(await (await caches.open(name)).keys()).map((r) => r.url));
+            }
+            return OFFLINE_FILES.every((f) => urls.some((u) => u.includes(f)));
         } catch { return false; }
     }
 
@@ -35,9 +38,18 @@
             if (await isFullyCached()) setStatus('✅ Готово к работе без интернета', true);
             else setTimeout(poll, 1500);
         })();
+        // A new version was installed: reload once so it takes effect.
+        let reloaded = false;
+        const hadController = !!navigator.serviceWorker.controller;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            if (!hadController || reloaded) return;
+            reloaded = true;
+            location.reload();
+        });
     } else {
         setStatus('Офлайн-режим недоступен в этом браузере');
     }
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 
     // ---------- Install prompt (Android/Chrome) ----------
     let deferredPrompt = null;
@@ -54,6 +66,210 @@
         $('installBtn').style.display = 'none';
     });
 
+    // ---------- Notes storage ----------
+    const NOTES_KEY = 'ocr-notes';
+    let notes = [];
+    try { notes = JSON.parse(localStorage.getItem(NOTES_KEY)) || []; } catch { notes = []; }
+
+    function persistNotes() {
+        try {
+            localStorage.setItem(NOTES_KEY, JSON.stringify(notes));
+            $('notesCount').textContent = notes.length;
+            return true;
+        } catch {
+            toast('Не удалось сохранить — память телефона заполнена?');
+            return false;
+        }
+    }
+
+    const noteTitle = (n) => (n.text.trim().split('\n')[0] || 'Без названия').slice(0, 80);
+    const fmtDate = (ts) => new Date(ts).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const findNote = (id) => notes.find((n) => n.id === id);
+
+    function createNote(text) {
+        const now = Date.now();
+        const note = { id: String(now) + Math.random().toString(36).slice(2, 6), text, created: now, updated: now };
+        notes.unshift(note);
+        persistNotes();
+        return note;
+    }
+
+    function appendToNote(note, text) {
+        note.text = note.text.trim() ? note.text.replace(/\s+$/, '') + '\n\n' + text : text;
+        note.updated = Date.now();
+        // keep most recently changed first
+        notes.splice(notes.indexOf(note), 1);
+        notes.unshift(note);
+        persistNotes();
+    }
+
+    // ---------- Views ----------
+    let openNoteId = null;
+    let targetNoteId = null; // note that new recognized text will be appended to
+
+    function showView(name) {
+        document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + name));
+        const tab = name === 'note' ? 'notes' : name;
+        document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === tab));
+        if (name === 'notes') renderNotes();
+        window.scrollTo(0, 0);
+    }
+    document.querySelectorAll('.tab').forEach((t) => t.addEventListener('click', () => {
+        closeNote();
+        showView(t.dataset.view);
+    }));
+
+    function renderNotes() {
+        $('notesCount').textContent = notes.length;
+        const q = $('search').value.trim().toLowerCase();
+        const list = $('notesList');
+        list.innerHTML = '';
+        const shown = q ? notes.filter((n) => n.text.toLowerCase().includes(q)) : notes;
+        if (!shown.length) {
+            list.innerHTML = q
+                ? '<div class="empty">Ничего не найдено</div>'
+                : '<div class="empty">Заметок пока нет.<br>Распознайте текст с фото и нажмите «Сохранить в блокнот» или создайте заметку вручную.</div>';
+            return;
+        }
+        for (const n of shown) {
+            const el = document.createElement('button');
+            el.className = 'note';
+            const rest = n.text.trim().split('\n').slice(1).join(' ').trim();
+            el.innerHTML = '<div class="title"></div><div class="preview"></div><div class="date"></div>';
+            el.querySelector('.title').textContent = noteTitle(n);
+            el.querySelector('.preview').textContent = rest;
+            el.querySelector('.date').textContent = fmtDate(n.updated);
+            el.addEventListener('click', () => openNote(n.id));
+            list.appendChild(el);
+        }
+    }
+    $('search').addEventListener('input', renderNotes);
+
+    function openNote(id) {
+        const n = findNote(id);
+        if (!n) return;
+        openNoteId = id;
+        $('noteText').value = n.text;
+        $('savedState').textContent = 'Изменено ' + fmtDate(n.updated);
+        showView('note');
+    }
+
+    function closeNote() {
+        saveOpenNote();
+        const n = openNoteId && findNote(openNoteId);
+        // drop notes that were created and left empty
+        if (n && !n.text.trim()) {
+            notes.splice(notes.indexOf(n), 1);
+            persistNotes();
+        }
+        openNoteId = null;
+    }
+
+    let saveTimer = null;
+    function saveOpenNote() {
+        clearTimeout(saveTimer);
+        const n = openNoteId && findNote(openNoteId);
+        if (!n || n.text === $('noteText').value) return;
+        n.text = $('noteText').value;
+        n.updated = Date.now();
+        if (persistNotes()) $('savedState').textContent = '✓ Сохранено';
+    }
+    $('noteText').addEventListener('input', () => {
+        $('savedState').textContent = '…';
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(saveOpenNote, 500);
+    });
+    // save if the app is closed or hidden mid-edit
+    document.addEventListener('visibilitychange', () => { if (document.hidden) saveOpenNote(); });
+    window.addEventListener('pagehide', saveOpenNote);
+
+    $('backBtn').addEventListener('click', () => { closeNote(); showView('notes'); });
+    $('newNoteBtn').addEventListener('click', () => {
+        const n = createNote('');
+        openNote(n.id);
+        $('noteText').focus();
+    });
+
+    $('addFromPhotoBtn').addEventListener('click', () => {
+        saveOpenNote();
+        const n = findNote(openNoteId);
+        if (!n) return;
+        if (!n.text.trim()) { n.text = ' '; persistNotes(); } // keep it from being dropped as empty
+        setTarget(n.id);
+        openNoteId = null;
+        showView('scan');
+    });
+
+    function setTarget(id) {
+        targetNoteId = id;
+        const n = id && findNote(id);
+        $('target').classList.toggle('show', !!n);
+        if (n) $('targetTitle').textContent = n.text.trim() ? noteTitle(n) : 'новая заметка';
+        $('toNoteBtn').textContent = n ? '📒 Добавить в заметку' : '📒 Сохранить в блокнот';
+    }
+    $('targetCancel').addEventListener('click', () => setTarget(null));
+
+    $('toNoteBtn').addEventListener('click', () => {
+        const text = $('result').value.trim();
+        if (!text) return toast('Сначала распознайте текст');
+        const target = targetNoteId && findNote(targetNoteId);
+        let note;
+        if (target) {
+            if (!target.text.trim()) target.text = '';
+            appendToNote(target, text);
+            note = target;
+        } else {
+            note = createNote(text);
+        }
+        setTarget(null);
+        resetScan();
+        toast(target ? 'Добавлено в заметку' : 'Сохранено в блокнот');
+        openNote(note.id);
+    });
+
+    // ---------- Note actions ----------
+    async function copyText(text, fallbackEl) {
+        if (!text.trim()) return toast('Нечего копировать');
+        try {
+            await navigator.clipboard.writeText(text);
+        } catch {
+            fallbackEl.select();
+            document.execCommand('copy');
+        }
+        toast('Скопировано');
+    }
+    $('noteCopyBtn').addEventListener('click', () => copyText($('noteText').value, $('noteText')));
+    $('noteShareBtn').addEventListener('click', async () => {
+        const text = $('noteText').value;
+        if (!text.trim()) return toast('Нечего отправлять');
+        if (navigator.share) {
+            try { await navigator.share({ text }); } catch { /* cancelled */ }
+        } else {
+            copyText(text, $('noteText'));
+        }
+    });
+    $('noteSaveBtn').addEventListener('click', () => {
+        const text = $('noteText').value;
+        if (!text.trim()) return toast('Нечего сохранять');
+        const name = noteTitle({ text }).replace(/[\\/:*?"<>|]+/g, '').slice(0, 40).trim() || 'заметка';
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
+        a.download = name + '.txt';
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    });
+    $('noteDeleteBtn').addEventListener('click', () => {
+        const n = findNote(openNoteId);
+        if (!n) return;
+        if (n.text.trim() && !confirm('Удалить заметку «' + noteTitle(n) + '»?')) return;
+        notes.splice(notes.indexOf(n), 1);
+        persistNotes();
+        if (targetNoteId === n.id) setTarget(null);
+        openNoteId = null;
+        toast('Заметка удалена');
+        showView('notes');
+    });
+
     // ---------- Images ----------
     function addFiles(files) {
         for (const file of files) {
@@ -63,15 +279,27 @@
         renderThumbs();
     }
 
+    function moveImage(img, dir) {
+        const i = images.indexOf(img);
+        const j = i + dir;
+        if (j < 0 || j >= images.length) return;
+        [images[i], images[j]] = [images[j], images[i]];
+        renderThumbs();
+    }
+
     function renderThumbs() {
         const box = $('thumbs');
         box.innerHTML = '';
-        for (const img of images) {
+        images.forEach((img, i) => {
             const el = document.createElement('div');
             el.className = 'thumb';
-            el.innerHTML = `<img alt="" style="transform: rotate(${img.rotation}deg)">
-                <div class="tools"><button data-act="rot" title="Повернуть">↻</button><button data-act="del" title="Удалить">✕</button></div>`;
+            el.innerHTML = `<img alt="" style="transform: rotate(${img.rotation}deg)"><div class="num">${i + 1}</div>
+                <div class="tools"><button data-act="left" title="Раньше">◀</button><button data-act="rot" title="Повернуть">↻</button><button data-act="right" title="Позже">▶</button><button data-act="del" title="Удалить">✕</button></div>`;
             el.querySelector('img').src = img.url;
+            el.querySelector('[data-act="left"]').disabled = i === 0;
+            el.querySelector('[data-act="right"]').disabled = i === images.length - 1;
+            el.querySelector('[data-act="left"]').onclick = () => moveImage(img, -1);
+            el.querySelector('[data-act="right"]').onclick = () => moveImage(img, 1);
             el.querySelector('[data-act="rot"]').onclick = () => { img.rotation = (img.rotation + 90) % 360; renderThumbs(); };
             el.querySelector('[data-act="del"]').onclick = () => {
                 URL.revokeObjectURL(img.url);
@@ -79,8 +307,12 @@
                 renderThumbs();
             };
             box.appendChild(el);
-        }
+        });
+        $('thumbsHint').textContent = images.length > 1
+            ? `${images.length} картинки — текст соберётся в один по порядку номеров`
+            : '';
         $('runBtn').disabled = images.length === 0;
+        $('runBtn').textContent = images.length > 1 ? `🔍 Распознать ${images.length} картинки в один текст` : '🔍 Распознать текст';
     }
 
     $('cameraInput').addEventListener('change', (e) => { addFiles(e.target.files); e.target.value = ''; });
@@ -209,11 +441,14 @@
                 if ($('optJoin').checked) text = joinLines(text);
                 parts.push(text);
             }
-            const out = parts.filter(Boolean).join('\n\n———\n\n');
+            const sep = $('optSeparator').checked ? '\n\n———\n\n' : '\n\n';
+            const out = parts.filter(Boolean).join(sep);
             const res = $('result');
-            res.value = res.value.trim() ? res.value.trim() + '\n\n' + out : out;
+            res.value = res.value.trim() ? res.value.trim() + sep + out : out;
             $('progress').firstElementChild.style.width = '100%';
-            $('progressText').textContent = out ? '✅ Готово' : 'Текст не найден — попробуйте более чёткое фото';
+            $('progressText').textContent = out
+                ? (images.length > 1 ? `✅ Готово: текст с ${images.length} картинок собран в один` : '✅ Готово')
+                : 'Текст не найден — попробуйте более чёткое фото';
             res.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } catch (err) {
             console.error(err);
@@ -224,44 +459,18 @@
     });
 
     // ---------- Result actions ----------
-    $('copyBtn').addEventListener('click', async () => {
-        const text = $('result').value;
-        if (!text) return toast('Нечего копировать');
-        try {
-            await navigator.clipboard.writeText(text);
-        } catch {
-            $('result').select();
-            document.execCommand('copy');
-        }
-        toast('Скопировано');
-    });
-
-    $('shareBtn').addEventListener('click', async () => {
-        const text = $('result').value;
-        if (!text) return toast('Нечего отправлять');
-        if (navigator.share) {
-            try { await navigator.share({ text }); } catch { /* cancelled */ }
-        } else {
-            toast('Поделиться недоступно — используйте копирование');
-        }
-    });
-
-    $('saveBtn').addEventListener('click', () => {
-        const text = $('result').value;
-        if (!text) return toast('Нечего сохранять');
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain;charset=utf-8' }));
-        a.download = 'text-' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.txt';
-        a.click();
-        setTimeout(() => URL.revokeObjectURL(a.href), 1000);
-    });
-
-    $('clearBtn').addEventListener('click', () => {
+    function resetScan() {
         $('result').value = '';
         images.forEach((i) => URL.revokeObjectURL(i.url));
         images.length = 0;
         renderThumbs();
         $('progress').style.display = 'none';
         $('progressText').textContent = '';
-    });
+    }
+
+    $('copyBtn').addEventListener('click', () => copyText($('result').value, $('result')));
+    $('clearBtn').addEventListener('click', resetScan);
+
+    renderThumbs();
+    $('notesCount').textContent = notes.length;
 })();
