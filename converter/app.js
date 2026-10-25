@@ -107,7 +107,14 @@
     let openNoteId = null;
     let targetNoteId = null; // note that new recognized text will be appended to
 
+    function setNoteFull(on) {
+        document.body.classList.toggle('note-full', on);
+        $('fullBtn').textContent = on ? '↙ Свернуть' : '⛶ Весь экран';
+    }
+    $('fullBtn').addEventListener('click', () => setNoteFull(!document.body.classList.contains('note-full')));
+
     function showView(name) {
+        if (name !== 'note') setNoteFull(false);
         document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + name));
         const onNotes = name === 'notes' || name === 'note';
         document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', onNotes && t.dataset.view === 'notes'));
