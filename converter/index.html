@@ -76,7 +76,8 @@
         .drop.over { border-color: var(--primary); color: var(--primary); }
         .thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
         .thumb { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); aspect-ratio: 1; background: var(--soft); }
-        .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+        .thumb .cropped { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: #fff; font-size: 11px; font-weight: 600; border-radius: 10px; padding: 2px 7px; }
         .thumb .num { position: absolute; top: 4px; left: 4px; background: var(--primary); color: #fff; font-size: 12px; font-weight: 700; border-radius: 10px; min-width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; padding: 0 6px; }
         .thumb .tools { position: absolute; inset: auto 0 0 0; display: flex; justify-content: space-between; gap: 2px; padding: 4px; background: linear-gradient(transparent, rgba(0,0,0,0.55)); }
         .thumb .tools button { padding: 4px 0; flex: 1; font-size: 13px; border-radius: 7px; background: rgba(255,255,255,0.92); color: #222; border: none; }
@@ -110,7 +111,28 @@
         }
         body.note-full #noteText { flex: 1; min-height: 0; resize: none; font-size: 17px; }
         body.note-full #addFromPhotoBtn { display: none; }
-        .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text); color: var(--card); padding: 10px 16px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 5; }
+        /* photo viewer with zone selection (always dark, like a photo app) */
+        .cropper { position: fixed; inset: 0; z-index: 20; background: #000; color: #fff; display: flex; flex-direction: column;
+            padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px); }
+        .cropper[hidden] { display: none; }
+        body.cropping { overflow: hidden; }
+        .crop-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
+        .crop-bar .title { flex: 1; text-align: center; font-size: 13px; color: #cfd8d3; line-height: 1.3; }
+        .cropper button { background: #2a2f2c; border-color: #3a413d; color: #fff; padding: 10px 12px; font-size: 14px; }
+        .cropper button.primary { background: #4a6b5d; border-color: #4a6b5d; }
+        .cropper button:disabled { opacity: 0.4; }
+        .crop-stage { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; margin: 0 8px; }
+        .crop-wrap { position: relative; }
+        .crop-wrap canvas { width: 100%; height: 100%; display: block; }
+        .crop-box { position: absolute; border: 2px solid #fff; box-shadow: 0 0 0 9999px rgba(0,0,0,0.55); pointer-events: none; }
+        .crop-box[hidden] { display: none; }
+        .crop-box i { position: absolute; width: 16px; height: 16px; border: 4px solid #8fd1b4; }
+        .crop-box i:nth-child(1) { left: -5px; top: -5px; border-right: none; border-bottom: none; }
+        .crop-box i:nth-child(2) { right: -5px; top: -5px; border-left: none; border-bottom: none; }
+        .crop-box i:nth-child(3) { left: -5px; bottom: -5px; border-right: none; border-top: none; }
+        .crop-box i:nth-child(4) { right: -5px; bottom: -5px; border-left: none; border-top: none; }
+        .crop-tools { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 10px 12px 12px; }
+        .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: var(--text); color: var(--card); padding: 10px 16px; border-radius: 20px; font-size: 13px; opacity: 0; transition: opacity 0.2s; pointer-events: none; z-index: 30; }
         .toast.show { opacity: 1; }
         #installBtn { display: none; }
     </style>
@@ -206,6 +228,24 @@
             <button id="noteSaveBtn">💾 Сохранить .txt</button>
             <button id="noteDeleteBtn" class="danger">🗑️ Удалить</button>
         </div>
+    </div>
+</div>
+<div class="cropper" id="cropper" hidden>
+    <div class="crop-bar">
+        <button id="cropCancel">Отмена</button>
+        <div class="title">Проведите пальцем по нужному тексту — распознается только эта зона</div>
+        <button class="primary" id="cropDone">Готово</button>
+    </div>
+    <div class="crop-stage" id="cropStage">
+        <div class="crop-wrap" id="cropWrap">
+            <canvas id="cropCanvas"></canvas>
+            <div class="crop-box" id="cropBox" hidden><i></i><i></i><i></i><i></i></div>
+        </div>
+    </div>
+    <div class="crop-tools">
+        <button id="cropRotate">↻ Повернуть</button>
+        <button id="cropAll">Всё фото</button>
+        <button id="cropDup" disabled>➕ Ещё зона</button>
     </div>
 </div>
 <div class="toast" id="toast"></div>

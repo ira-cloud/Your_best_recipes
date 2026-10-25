@@ -278,10 +278,30 @@
     });
 
     // ---------- Images ----------
+    // Each item: { id, file, url, rotation, crop, thumb }; crop is { x, y, w, h } as 0..1 of the rotated photo, or null.
+    // Several items may share one photo (different zones of the same picture).
+    function removeImage(img) {
+        images.splice(images.indexOf(img), 1);
+        if (!images.some((i) => i.url === img.url)) URL.revokeObjectURL(img.url);
+    }
+
     function addFiles(files) {
+        const added = [];
         for (const file of files) {
             if (!file.type.startsWith('image/')) continue;
-            images.push({ id: nextId++, file, url: URL.createObjectURL(file), rotation: 0 });
+            const img = { id: nextId++, file, url: URL.createObjectURL(file), rotation: 0, crop: null, thumb: null };
+            images.push(img);
+            added.push(img);
+        }
+        renderThumbs();
+        added.forEach(updateThumb);
+    }
+
+    async function updateThumb(img) {
+        try {
+            img.thumb = (await renderImage(img, 320)).toDataURL('image/jpeg', 0.8);
+        } catch {
+            img.thumb = null;
         }
         renderThumbs();
     }
@@ -300,24 +320,25 @@
         images.forEach((img, i) => {
             const el = document.createElement('div');
             el.className = 'thumb';
-            el.innerHTML = `<img alt="" style="transform: rotate(${img.rotation}deg)"><div class="num">${i + 1}</div>
+            el.innerHTML = `<img alt="Открыть фото"><div class="num">${i + 1}</div>${img.crop ? '<div class="cropped">✂️ зона</div>' : ''}
                 <div class="tools"><button data-act="left" title="Раньше">◀</button><button data-act="rot" title="Повернуть">↻</button><button data-act="right" title="Позже">▶</button><button data-act="del" title="Удалить">✕</button></div>`;
-            el.querySelector('img').src = img.url;
+            el.querySelector('img').src = img.thumb || img.url;
+            el.querySelector('img').onclick = () => openCropper(img);
             el.querySelector('[data-act="left"]').disabled = i === 0;
             el.querySelector('[data-act="right"]').disabled = i === images.length - 1;
             el.querySelector('[data-act="left"]').onclick = () => moveImage(img, -1);
             el.querySelector('[data-act="right"]').onclick = () => moveImage(img, 1);
-            el.querySelector('[data-act="rot"]').onclick = () => { img.rotation = (img.rotation + 90) % 360; renderThumbs(); };
-            el.querySelector('[data-act="del"]').onclick = () => {
-                URL.revokeObjectURL(img.url);
-                images.splice(images.indexOf(img), 1);
-                renderThumbs();
+            el.querySelector('[data-act="rot"]').onclick = () => {
+                img.rotation = (img.rotation + 90) % 360;
+                img.crop = null;
+                updateThumb(img);
             };
+            el.querySelector('[data-act="del"]').onclick = () => { removeImage(img); renderThumbs(); };
             box.appendChild(el);
         });
-        $('thumbsHint').textContent = images.length > 1
-            ? `${images.length} картинки — текст соберётся в один по порядку номеров`
-            : '';
+        $('thumbsHint').textContent = !images.length ? ''
+            : 'Нажмите на фото, чтобы открыть его и выделить нужный текст.' +
+              (images.length > 1 ? ` ${images.length} картинки — текст соберётся в один по порядку номеров.` : '');
         $('runBtn').disabled = images.length === 0;
         $('runBtn').textContent = images.length > 1 ? `🔍 Распознать ${images.length} картинки в один текст` : '🔍 Распознать текст';
     }
@@ -334,21 +355,33 @@
         if (files.length) addFiles(files);
     });
 
-    // Rotate, downscale huge photos, optionally boost contrast. Returns a canvas.
-    async function prepare(img, enhance) {
+    // Draw the photo rotated and (optionally) cropped onto a canvas, at most maxSide px on the longer side.
+    // Small zones are enlarged up to 2x: the engine reads small text better when it is bigger.
+    async function renderImage(img, maxSide, { useCrop = true, upscale = false } = {}) {
         const bmp = await loadImage(img.url);
-        const maxSide = 2600;
-        const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
-        const w = Math.round(bmp.width * scale);
-        const h = Math.round(bmp.height * scale);
-        const swap = img.rotation === 90 || img.rotation === 270;
+        const swap = img.rotation % 180 !== 0;
+        const fullW = swap ? bmp.height : bmp.width;
+        const fullH = swap ? bmp.width : bmp.height;
+        const c = useCrop && img.crop ? img.crop : { x: 0, y: 0, w: 1, h: 1 };
+        const sw = fullW * c.w;
+        const sh = fullH * c.h;
+        const scale = Math.min(maxSide / Math.max(sw, sh), upscale && Math.max(sw, sh) < 1200 ? 2 : 1);
         const canvas = document.createElement('canvas');
-        canvas.width = swap ? h : w;
-        canvas.height = swap ? w : h;
+        canvas.width = Math.max(1, Math.round(sw * scale));
+        canvas.height = Math.max(1, Math.round(sh * scale));
         const ctx = canvas.getContext('2d', { willReadFrequently: true });
-        ctx.translate(canvas.width / 2, canvas.height / 2);
+        ctx.imageSmoothingQuality = 'high';
+        ctx.scale(scale, scale);
+        ctx.translate(-fullW * c.x + fullW / 2, -fullH * c.y + fullH / 2);
         ctx.rotate((img.rotation * Math.PI) / 180);
-        ctx.drawImage(bmp, -w / 2, -h / 2, w, h);
+        ctx.drawImage(bmp, -bmp.width / 2, -bmp.height / 2);
+        return canvas;
+    }
+
+    // Rotate, crop, resize, optionally boost contrast. Returns a canvas.
+    async function prepare(img, enhance) {
+        const canvas = await renderImage(img, 2600, { upscale: true });
+        const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
         if (enhance) {
             const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -379,6 +412,141 @@
         }
         return canvas;
     }
+
+    // ---------- Photo viewer: pick the zone to recognize ----------
+    const crop = { img: null, rect: null, drag: null, w: 0, h: 0, startRotation: 0 };
+    const HANDLE = 30; // touch radius around a corner, px
+
+    async function openCropper(img) {
+        crop.img = img;
+        crop.startRotation = img.rotation;
+        crop.startCrop = img.crop;
+        $('cropper').hidden = false;
+        document.body.classList.add('cropping');
+        await drawCropper(img.crop);
+    }
+
+    async function drawCropper(norm) {
+        const stage = $('cropStage');
+        const full = await renderImage(crop.img, 2400, { useCrop: false });
+        const fit = Math.min(stage.clientWidth / full.width, stage.clientHeight / full.height);
+        crop.w = Math.floor(full.width * fit);
+        crop.h = Math.floor(full.height * fit);
+        const cv = $('cropCanvas');
+        cv.width = full.width;
+        cv.height = full.height;
+        cv.getContext('2d').drawImage(full, 0, 0);
+        $('cropWrap').style.width = crop.w + 'px';
+        $('cropWrap').style.height = crop.h + 'px';
+        crop.rect = norm ? { x: norm.x * crop.w, y: norm.y * crop.h, w: norm.w * crop.w, h: norm.h * crop.h } : null;
+        updateCropBox();
+    }
+
+    function updateCropBox() {
+        const r = crop.rect;
+        const box = $('cropBox');
+        box.hidden = !r;
+        if (r) Object.assign(box.style, { left: r.x + 'px', top: r.y + 'px', width: r.w + 'px', height: r.h + 'px' });
+        $('cropDup').disabled = !r;
+    }
+
+    function cropNorm() {
+        const r = crop.rect;
+        return r ? { x: r.x / crop.w, y: r.y / crop.h, w: r.w / crop.w, h: r.h / crop.h } : null;
+    }
+
+    function closeCropper() {
+        $('cropper').hidden = true;
+        document.body.classList.remove('cropping');
+        crop.img = null;
+    }
+
+    const cropPoint = (e) => {
+        const b = $('cropWrap').getBoundingClientRect();
+        return {
+            x: Math.max(0, Math.min(crop.w, e.clientX - b.left)),
+            y: Math.max(0, Math.min(crop.h, e.clientY - b.top)),
+        };
+    };
+
+    $('cropStage').addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        $('cropStage').setPointerCapture(e.pointerId);
+        const p = cropPoint(e);
+        const r = crop.rect;
+        if (r) {
+            // corners: top-left, top-right, bottom-left, bottom-right; dragging one keeps the opposite in place
+            const corners = [[r.x, r.y], [r.x + r.w, r.y], [r.x, r.y + r.h], [r.x + r.w, r.y + r.h]];
+            const k = corners.findIndex(([cx, cy]) => Math.hypot(p.x - cx, p.y - cy) < HANDLE);
+            if (k >= 0) {
+                crop.drag = { mode: 'draw', ax: corners[3 - k][0], ay: corners[3 - k][1] };
+                return;
+            }
+            if (p.x > r.x && p.x < r.x + r.w && p.y > r.y && p.y < r.y + r.h) {
+                crop.drag = { mode: 'move', dx: p.x - r.x, dy: p.y - r.y };
+                return;
+            }
+        }
+        crop.drag = { mode: 'draw', ax: p.x, ay: p.y };
+    });
+
+    $('cropStage').addEventListener('pointermove', (e) => {
+        const d = crop.drag;
+        if (!d) return;
+        const p = cropPoint(e);
+        if (d.mode === 'draw') {
+            crop.rect = { x: Math.min(d.ax, p.x), y: Math.min(d.ay, p.y), w: Math.abs(p.x - d.ax), h: Math.abs(p.y - d.ay) };
+        } else {
+            const r = crop.rect;
+            r.x = Math.max(0, Math.min(crop.w - r.w, p.x - d.dx));
+            r.y = Math.max(0, Math.min(crop.h - r.h, p.y - d.dy));
+        }
+        updateCropBox();
+    });
+
+    const endDrag = () => {
+        if (!crop.drag) return;
+        crop.drag = null;
+        // a tap or a tiny box means "no zone"
+        if (crop.rect && (crop.rect.w < 15 || crop.rect.h < 15)) crop.rect = null;
+        updateCropBox();
+    };
+    $('cropStage').addEventListener('pointerup', endDrag);
+    $('cropStage').addEventListener('pointercancel', endDrag);
+
+    $('cropDone').addEventListener('click', () => {
+        const img = crop.img;
+        img.crop = cropNorm();
+        closeCropper();
+        updateThumb(img);
+    });
+    $('cropCancel').addEventListener('click', () => {
+        const img = crop.img;
+        const changed = img.rotation !== crop.startRotation;
+        img.rotation = crop.startRotation;
+        img.crop = crop.startCrop;
+        closeCropper();
+        if (changed) updateThumb(img);
+    });
+    $('cropAll').addEventListener('click', () => { crop.rect = null; updateCropBox(); });
+    $('cropRotate').addEventListener('click', () => {
+        crop.img.rotation = (crop.img.rotation + 90) % 360;
+        drawCropper(null);
+    });
+    $('cropDup').addEventListener('click', async () => {
+        const img = crop.img;
+        img.crop = cropNorm();
+        updateThumb(img);
+        const next = { id: nextId++, file: img.file, url: img.url, rotation: img.rotation, crop: null, thumb: img.thumb };
+        images.splice(images.indexOf(img) + 1, 0, next);
+        renderThumbs();
+        crop.img = next;
+        crop.startRotation = next.rotation;
+        crop.startCrop = null;
+        await drawCropper(null);
+        toast('Зона сохранена. Выделите следующую');
+    });
+    window.addEventListener('resize', () => { if (crop.img) drawCropper(cropNorm()); });
 
     function loadImage(url) {
         return new Promise((resolve, reject) => {
@@ -495,7 +663,7 @@
     // ---------- Result actions ----------
     function resetScan() {
         $('result').value = '';
-        images.forEach((i) => URL.revokeObjectURL(i.url));
+        new Set(images.map((i) => i.url)).forEach((u) => URL.revokeObjectURL(u));
         images.length = 0;
         renderThumbs();
         $('progress').style.display = 'none';
