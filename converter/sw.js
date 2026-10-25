@@ -1,6 +1,6 @@
 // Caches the whole app (including the OCR engine and language data) so it works fully offline.
 // Bump APP_CACHE when the app files change; the large engine files stay in their own cache.
-const APP_CACHE = 'ocr-app-v3';
+const APP_CACHE = 'ocr-app-v4';
 const ENGINE_CACHE = 'ocr-engine-v1';
 const APP_FILES = [
     './',
@@ -18,6 +18,7 @@ const ENGINE_FILES = [
     'lib/core/tesseract-core-simd-lstm.wasm.js',
     'lang/eng.traineddata.gz',
     'lang/rus.traineddata.gz',
+    'lang/ukr.traineddata.gz',
 ];
 
 // Fill a cache, skipping files it already holds; bypass the HTTP cache so updates arrive.
