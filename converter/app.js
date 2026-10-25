@@ -109,8 +109,8 @@
 
     function showView(name) {
         document.querySelectorAll('.view').forEach((v) => v.classList.toggle('active', v.id === 'view-' + name));
-        const tab = name === 'note' ? 'notes' : name;
-        document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.view === tab));
+        const onNotes = name === 'notes' || name === 'note';
+        document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', onNotes && t.dataset.view === 'notes'));
         if (name === 'notes') renderNotes();
         window.scrollTo(0, 0);
     }

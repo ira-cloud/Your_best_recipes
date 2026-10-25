@@ -39,16 +39,17 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background: var(--bg); color: var(--text); display: flex; justify-content: center; padding: 12px; min-height: 100vh; }
-        .app { width: 100%; max-width: 480px; background: var(--card); border-radius: 20px; border: 1px solid var(--border); overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.06); align-self: flex-start; }
+        .app { width: 100%; max-width: 480px; background: var(--card); border-radius: 20px; border: 1px solid var(--border); overflow: hidden; overflow: clip; box-shadow: 0 8px 24px rgba(0,0,0,0.06); align-self: flex-start; }
         .header { background: var(--primary); color: #fff; padding: 18px 16px; text-align: center; }
         .header h1 { font-size: 19px; font-weight: 600; }
         .header p { font-size: 12px; opacity: 0.85; margin-top: 3px; }
         .status { font-size: 11px; padding: 6px 16px; background: var(--soft); color: var(--muted); text-align: center; border-bottom: 1px solid var(--border); }
         .status.ok { color: var(--primary); font-weight: 600; }
-        .tabs { display: flex; background: var(--soft); border-bottom: 1px solid var(--border); }
-        .tab { flex: 1; padding: 13px 8px; font-size: 14px; font-weight: 600; color: var(--muted); background: none; border: none; border-radius: 0; border-bottom: 2px solid transparent; }
-        .tab.active { background: var(--card); color: var(--primary); border-bottom-color: var(--primary); }
-        .tab .count { font-size: 11px; background: var(--accent); color: #fff; border-radius: 10px; padding: 1px 7px; margin-left: 4px; }
+        .tabs { display: flex; gap: 6px; padding: 8px; background: var(--soft); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 3; }
+        .tabs .tab { flex: 1; flex-direction: column; gap: 2px; padding: 9px 4px; font-size: 13px; font-weight: 600; color: var(--text); background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+        .tab .ico { font-size: 22px; line-height: 1; }
+        .tabs .tab.active { background: var(--primary); border-color: var(--primary); color: #fff; }
+        .tab .count { font-size: 11px; background: var(--accent); color: #fff; border-radius: 10px; padding: 0 6px; margin-left: 3px; }
         .view { padding: 16px; display: none; }
         .view.active { display: block; }
         .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); margin: 14px 0 6px; }
@@ -113,8 +114,9 @@
     </div>
     <div class="status" id="status">Проверка офлайн-режима…</div>
     <div class="tabs">
-        <button class="tab active" data-view="scan">🔍 Распознать</button>
-        <button class="tab" data-view="notes">📒 Блокнот <span class="count" id="notesCount">0</span></button>
+        <label class="btn tab" for="cameraInput" data-view="scan"><span class="ico">📸</span>Камера</label>
+        <label class="btn tab" for="fileInput" data-view="scan"><span class="ico">🖼️</span>Галерея</label>
+        <button class="tab" data-view="notes"><span class="ico">📒</span><span>Блокнот<span class="count" id="notesCount">0</span></span></button>
     </div>
 
     <!-- ===== Распознавание ===== -->
@@ -125,13 +127,9 @@
         </div>
 
         <div class="label">1. Картинки</div>
-        <div class="row">
-            <label class="btn" for="cameraInput">📸 Камера</label>
-            <label class="btn" for="fileInput">🖼️ Галерея</label>
-        </div>
         <input type="file" id="cameraInput" accept="image/*" capture="environment">
         <input type="file" id="fileInput" accept="image/*" multiple>
-        <div class="drop" id="drop">или перетащите / вставьте картинку сюда</div>
+        <div class="drop" id="drop">Нажмите вверху «Камера» или «Галерея», чтобы добавить фото</div>
         <div class="thumbs" id="thumbs"></div>
         <div class="thumbs-hint" id="thumbsHint"></div>
 
