@@ -1,11 +1,12 @@
 // Caches the whole app (including the OCR engine and language data) so it works fully offline.
 // Bump APP_CACHE when the app files change; the large engine files stay in their own cache.
-const APP_CACHE = 'ocr-app-v9';
+const APP_CACHE = 'ocr-app-v10';
 const ENGINE_CACHE = 'ocr-engine-v1';
 const APP_FILES = [
     './',
     'index.html',
     'app.js',
+    'reader.js',
     'manifest.webmanifest',
     'icons/icon.svg',
     'icons/icon-192.png',
