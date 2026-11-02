@@ -19,7 +19,7 @@
         $('status').classList.toggle('ok', !!ok);
     };
 
-    const OFFLINE_FILES = ['rus.traineddata', 'ukr.traineddata', 'eng.traineddata', 'tesseract-core-lstm', 'tesseract-core-simd-lstm', 'worker.min.js', 'app.js'];
+    const OFFLINE_FILES = ['rus.traineddata', 'ukr.traineddata', 'eng.traineddata', 'tesseract-core-lstm', 'tesseract-core-simd-lstm', 'worker.min.js', 'app.js', 'reader.js'];
     async function isFullyCached() {
         try {
             const urls = [];
@@ -395,8 +395,7 @@
     });
 
     // Draw the photo rotated and (optionally) cropped onto a canvas, at most maxSide px on the longer side.
-    // Small zones are enlarged up to 2x: the engine reads small text better when it is bigger.
-    async function renderImage(img, maxSide, { useCrop = true, upscale = false } = {}) {
+    async function renderImage(img, maxSide, { useCrop = true } = {}) {
         const bmp = await loadImage(img.url);
         const swap = img.rotation % 180 !== 0;
         const fullW = swap ? bmp.height : bmp.width;
@@ -404,7 +403,7 @@
         const c = useCrop && img.crop ? img.crop : { x: 0, y: 0, w: 1, h: 1 };
         const sw = fullW * c.w;
         const sh = fullH * c.h;
-        const scale = Math.min(maxSide / Math.max(sw, sh), upscale && Math.max(sw, sh) < 1200 ? 2 : 1);
+        const scale = Math.min(maxSide / Math.max(sw, sh), 1);
         const canvas = document.createElement('canvas');
         canvas.width = Math.max(1, Math.round(sw * scale));
         canvas.height = Math.max(1, Math.round(sh * scale));
@@ -417,40 +416,8 @@
         return canvas;
     }
 
-    // Rotate, crop, resize, optionally boost contrast. Returns a canvas.
-    async function prepare(img, enhance) {
-        const canvas = await renderImage(img, 2600, { upscale: true });
-        const ctx = canvas.getContext('2d', { willReadFrequently: true });
-
-        if (enhance) {
-            const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const px = data.data;
-            // grayscale + stretch histogram (1%..99%)
-            const hist = new Uint32Array(256);
-            for (let i = 0; i < px.length; i += 4) {
-                const g = (px[i] * 0.299 + px[i + 1] * 0.587 + px[i + 2] * 0.114) | 0;
-                px[i] = g;
-                hist[g]++;
-            }
-            const total = px.length / 4;
-            let lo = 0, hi = 255, acc = 0;
-            while (lo < 255 && (acc += hist[lo]) < total * 0.01) lo++;
-            acc = 0;
-            while (hi > 0 && (acc += hist[hi]) < total * 0.01) hi--;
-            const range = Math.max(1, hi - lo);
-            // light text on a dark background (dark-mode screenshots): invert to dark-on-light
-            let sum = 0;
-            for (let g = 0; g < 256; g++) sum += hist[g] * g;
-            const invert = ((sum / total - lo) * 255) / range < 110;
-            for (let i = 0; i < px.length; i += 4) {
-                let v = Math.max(0, Math.min(255, ((px[i] - lo) * 255) / range));
-                if (invert) v = 255 - v;
-                px[i] = px[i + 1] = px[i + 2] = v;
-            }
-            ctx.putImageData(data, 0, 0);
-        }
-        return canvas;
-    }
+    // Rotate and crop; the reader cleans up and scales each text line itself.
+    const prepare = (img) => renderImage(img, 2600);
 
     // ---------- Photo viewer: pick the zone to recognize ----------
     const crop = { img: null, rect: null, drag: null, w: 0, h: 0, startRotation: 0 };
@@ -597,7 +564,7 @@
     }
 
     // ---------- OCR ----------
-    let currentPage = { index: 0, total: 1 };
+    let currentPage = { index: 0, total: 1, step: 0, steps: 1 };
     function onProgress(m) {
         const bar = $('progress').firstElementChild;
         const labels = {
@@ -610,9 +577,9 @@
         const label = labels[m.status] || m.status;
         const pct = Math.round((m.progress || 0) * 100);
         if (m.status === 'recognizing text') {
-            const overall = ((currentPage.index + (m.progress || 0)) / currentPage.total) * 100;
-            bar.style.width = overall + '%';
-            $('progressText').textContent = `${label}: картинка ${currentPage.index + 1} из ${currentPage.total} — ${pct}%`;
+            const page = (currentPage.step + (m.progress || 0)) / currentPage.steps;
+            bar.style.width = ((currentPage.index + page) / currentPage.total) * 100 + '%';
+            $('progressText').textContent = `${label}: картинка ${currentPage.index + 1} из ${currentPage.total} — ${Math.round(page * 100)}%`;
         } else {
             $('progressText').textContent = `${label}… ${pct}%`;
         }
@@ -632,27 +599,6 @@
         });
         workerLang = lang;
         return worker;
-    }
-
-    // Build text from recognized lines, dropping what the engine was unsure about:
-    // icons, buttons and frames come out as low-confidence junk like "] Г adh" or "| ©]".
-    function cleanText(data) {
-        const blocks = [];
-        for (const block of data.blocks || []) {
-            const paras = [];
-            for (const para of block.paragraphs) {
-                const lines = [];
-                for (const line of para.lines) {
-                    if (line.confidence < 55) continue;
-                    const words = line.words.filter((w) => w.confidence >= 60 && (/[\p{L}\p{N}]/u.test(w.text) || /^[—–\-…:;,.!?«»„“"'()]+$/.test(w.text)));
-                    if (!words.some((w) => (w.text.match(/[\p{L}\p{N}]/gu) || []).length >= 2)) continue;
-                    lines.push(words.map((w) => w.text).join(' '));
-                }
-                if (lines.length) paras.push(lines.join('\n'));
-            }
-            if (paras.length) blocks.push(paras.join('\n\n'));
-        }
-        return blocks.join('\n\n');
     }
 
     function joinLines(text) {
@@ -675,10 +621,11 @@
             currentPage = { index: 0, total: images.length };
             for (let i = 0; i < images.length; i++) {
                 currentPage.index = i;
-                const canvas = await prepare(images[i], $('optEnhance').checked);
-                const clean = $('optClean').checked;
-                const { data } = await w.recognize(canvas, {}, { text: true, blocks: clean });
-                let text = (clean ? cleanText(data) : data.text).trim();
+                const canvas = await prepare(images[i]);
+                Object.assign(currentPage, { step: 0, steps: 1 });
+                let text = ($('optClean').checked
+                    ? await Reader.read(w, canvas, (step, steps) => Object.assign(currentPage, { step, steps }))
+                    : await Reader.readPlain(w, canvas)).trim();
                 if ($('optJoin').checked) text = joinLines(text);
                 parts.push(text);
             }
