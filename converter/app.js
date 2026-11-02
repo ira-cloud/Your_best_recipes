@@ -350,9 +350,48 @@
     drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('over'); });
     drop.addEventListener('dragleave', () => drop.classList.remove('over'));
     drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('over'); addFiles(e.dataTransfer.files); });
+    // Paste a copied picture: anywhere on the page (Ctrl+V), or long-press the paste field on a phone.
+    const pastedFiles = (dt) => [...(dt?.items || [])]
+        .filter((i) => i.kind === 'file' && i.type.startsWith('image/'))
+        .map((i) => i.getAsFile())
+        .filter(Boolean);
     window.addEventListener('paste', (e) => {
-        const files = [...(e.clipboardData?.items || [])].filter((i) => i.kind === 'file').map((i) => i.getAsFile());
-        if (files.length) addFiles(files);
+        const files = pastedFiles(e.clipboardData);
+        if (files.length) {
+            e.preventDefault();
+            addFiles(files);
+            toast(files.length > 1 ? `Вставлено картинок: ${files.length}` : 'Картинка вставлена');
+            drop.blur();
+        } else if (e.target === drop || drop.contains(e.target)) {
+            e.preventDefault();
+            toast('В буфере нет картинки — сначала скопируйте изображение');
+        }
+    });
+    // the paste field only accepts pictures; never let typing change its text
+    drop.addEventListener('beforeinput', (e) => e.preventDefault());
+
+    $('pasteBtn').addEventListener('click', async () => {
+        if (navigator.clipboard && navigator.clipboard.read) {
+            try {
+                const files = [];
+                for (const item of await navigator.clipboard.read()) {
+                    const type = item.types.find((t) => t.startsWith('image/'));
+                    if (type) files.push(new File([await item.getType(type)], 'вставка.' + type.split('/')[1], { type }));
+                }
+                if (files.length) {
+                    addFiles(files);
+                    toast('Картинка вставлена');
+                } else {
+                    toast('В буфере нет картинки — сначала скопируйте изображение');
+                }
+                return;
+            } catch {
+                // reading the clipboard was refused or isn't supported: fall back to the paste field
+            }
+        }
+        drop.focus();
+        drop.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        toast('Нажмите и удерживайте поле и выберите «Вставить»');
     });
 
     // Draw the photo rotated and (optionally) cropped onto a canvas, at most maxSide px on the longer side.

@@ -73,7 +73,9 @@
         .opts { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 13px; margin-top: 10px; }
         .opts label { display: flex; align-items: center; gap: 6px; }
         .drop { border: 2px dashed var(--border); border-radius: 14px; padding: 12px; text-align: center; color: var(--muted); font-size: 13px; margin-top: 10px; }
-        .drop.over { border-color: var(--primary); color: var(--primary); }
+        .drop.over, .drop:focus { border-color: var(--primary); color: var(--primary); outline: none; }
+        .drop b { color: var(--text); }
+        .tabs .tab { min-width: 0; }
         .thumbs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
         .thumb { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid var(--border); aspect-ratio: 1; background: var(--soft); }
 .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
@@ -147,6 +149,7 @@
     <div class="tabs">
         <label class="btn tab" for="cameraInput" data-view="scan"><span class="ico">📸</span>Камера</label>
         <label class="btn tab" for="fileInput" data-view="scan"><span class="ico">🖼️</span>Галерея</label>
+        <button class="tab" id="pasteBtn" data-view="scan"><span class="ico">📋</span>Вставить</button>
         <button class="tab" data-view="notes"><span class="ico">📒</span><span>Блокнот<span class="count" id="notesCount">0</span></span></button>
     </div>
 
@@ -160,7 +163,7 @@
         <div class="label">1. Картинки</div>
         <input type="file" id="cameraInput" accept="image/*" capture="environment">
         <input type="file" id="fileInput" accept="image/*" multiple>
-        <div class="drop" id="drop">Нажмите вверху «Камера» или «Галерея», чтобы добавить фото</div>
+        <div class="drop" id="drop" contenteditable="true" inputmode="none" spellcheck="false" aria-label="Поле для вставки картинки"><b>📋 Скопировали картинку?</b><br>Нажмите кнопку «Вставить» вверху или нажмите и удерживайте здесь → «Вставить»</div>
         <div class="thumbs" id="thumbs"></div>
         <div class="thumbs-hint" id="thumbsHint"></div>
 
